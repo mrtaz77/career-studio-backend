@@ -1,8 +1,9 @@
+from typing import Awaitable, Callable
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
-from typing import Callable, Awaitable
 
 
 class LimitBodySizeMiddleware(BaseHTTPMiddleware):
@@ -11,9 +12,7 @@ class LimitBodySizeMiddleware(BaseHTTPMiddleware):
         self.max_bytes = max_bytes
 
     async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]]
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         body = await request.body()
         if len(body) > self.max_bytes:
