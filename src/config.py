@@ -15,4 +15,5 @@ class Settings(BaseSettings):
 
     FRONTEND_URL: str = Field(default="your_frontend_url")
 
+
 settings = Settings()
