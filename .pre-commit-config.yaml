@@ -3,10 +3,10 @@ repos:
     hooks:
       - id: format-staged
         name: Format only staged Python files (black + isort)
-        entry: .hooks/staged.sh
+        entry: wsl bash .hooks/format_staged.sh
         language: system
         types: [python]
-        pass_filenames: false  # disable passing filenames as args — handled inside script
+        pass_filenames: false
 
   - repo: https://github.com/psf/black
     rev: 25.1.0
