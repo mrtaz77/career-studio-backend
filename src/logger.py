@@ -1,10 +1,10 @@
 import logging
 import logging.config
 
-from config import settings
+from src.config import settings
 
 
-def setup_logging():
+def setup_logging() -> None:
     """Configure logging using logging.ini with color support."""
     logging.config.fileConfig("logging.ini", disable_existing_loggers=False)
 
