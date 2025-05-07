@@ -1,4 +1,4 @@
-from config import settings
+from src.config import settings
 
 origins = [
   settings.FRONTEND_URL

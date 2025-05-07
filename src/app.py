@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from middlewares import LimitBodySizeMiddleware
-from constants import origins, methods, headers
+from src.middlewares import LimitBodySizeMiddleware
+from src.constants import origins, methods, headers
 
 def configure_cors(app: FastAPI) -> None:
     """Add CORS middleware."""
