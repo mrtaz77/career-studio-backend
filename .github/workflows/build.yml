@@ -21,20 +21,20 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11.x'
-      
+
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: '1.8.2'
-      
+
       - name: Install dependencies
         run: poetry install
-      
+
       - name: Create .env file
         run: |
           touch .env
@@ -57,9 +57,14 @@ jobs:
         run: poetry run mypy src
 
       - name: Run pytest with coverage
-        run: poetry run pytest --cov=src --cov-report=term --cov-report=lcov:coverage.lcov
+        run: |
+          poetry run pytest --cov=src --cov-report=xml
+          ls -l coverage.xml  # Check if coverage.xml exists
       
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
