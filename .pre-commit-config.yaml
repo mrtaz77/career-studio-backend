@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: format-staged
         name: Format only staged Python files (black + isort)
-        entry: wsl bash .hooks/format_staged.sh
+        entry: python .hooks/format_staged.py
         language: system
         types: [python]
         pass_filenames: false
