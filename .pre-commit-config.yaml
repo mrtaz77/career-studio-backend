@@ -1,13 +1,24 @@
 repos:
+  - repo: local
+    hooks:
+      - id: format-staged
+        name: Format only staged Python files (black + isort)
+        entry: .hooks/staged.sh
+        language: system
+        types: [python]
+        pass_filenames: false  # disable passing filenames as args — handled inside script
+
   - repo: https://github.com/psf/black
-    rev: 24.3.0
+    rev: 25.1.0
     hooks:
       - id: black
+
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v5.10.1
     hooks:
       - id: isort
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.3
+    rev: v0.11.8
     hooks:
       - id: ruff
