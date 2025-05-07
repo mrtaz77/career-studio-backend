@@ -4,6 +4,8 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -43,19 +45,19 @@ jobs:
         shell: bash
 
       - name: Run black
-        run: black --check .
+        run: poetry run black --check .
 
       - name: Run isort
-        run: isort . --check-only
+        run: poetry run isort . --check-only
 
       - name: Run ruff
-        run: ruff check .
+        run: poetry run ruff check .
 
       - name: Run mypy
-        run: mypy src
+        run: poetry run mypy src
 
       - name: Run pytest with coverage
-        run: pytest
+        run: poetry run pytest
       
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
