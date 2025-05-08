@@ -34,7 +34,12 @@ line-length = 88
 
 [tool.mypy]
 strict = true
-exclude = ["src/prisma_client"]
+exclude = ["src/prisma_client", "src/prisma_client/*"]
+
+[[tool.mypy.overrides]]
+module = "src.prisma_client.*"
+ignore_errors = true
+follow_imports = "skip"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

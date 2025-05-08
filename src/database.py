@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from logging import getLogger
+from typing import AsyncGenerator
 
 from fastapi import FastAPI
 
@@ -10,7 +11,7 @@ db = Prisma()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Connecting to the database...")
     await db.connect()
     logger.info("Database connection established.")
