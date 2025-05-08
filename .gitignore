@@ -1,6 +1,7 @@
 # Added
 node_modules/
 .scannerwork/
+generated/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
