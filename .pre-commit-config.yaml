@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format-staged
+        name: Format only staged Python files (black + isort)
+        entry: python .hooks/format_staged.py
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.8
+    hooks:
+      - id: ruff
