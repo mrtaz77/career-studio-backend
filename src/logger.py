@@ -1,18 +1,33 @@
 import logging
-import logging.config
-
-from src.config import settings
-
+from colorlog import ColoredFormatter
 
 def setup_logging() -> None:
-    """Configure logging using logging.ini with color support."""
-    logging.config.fileConfig("logging.ini", disable_existing_loggers=False)
+    """Configure logging using colorlog."""
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
 
-    if settings.ENVIRONMENT != "development":
-        # Suppress noisy uvicorn logs in production
-        logging.getLogger("uvicorn").propagate = False
-        logging.getLogger("uvicorn.access").disabled = True
+    formatter = ColoredFormatter(
+        "%(log_color)s%(levelname)s%(reset)s:     [%(name)s] (%(filename)s:%(lineno)d) %(message)s",
+        log_colors={
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "bold_red",
+        }
+    )
 
+    handler.setFormatter(formatter)
+
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)  # default for all
+
+    # Clean up old handlers to prevent duplicates
+    root.handlers.clear()
+    root.addHandler(handler)
+
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("src.generated").setLevel(logging.WARNING)
 
 setup_logging()
-logger = logging.getLogger(__name__)
