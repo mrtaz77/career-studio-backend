@@ -3,7 +3,7 @@ from logging import getLogger
 
 from fastapi import FastAPI
 
-from src.generated.prisma import Prisma
+from src.prisma_client import Prisma
 
 logger = getLogger(__name__)
 db = Prisma()

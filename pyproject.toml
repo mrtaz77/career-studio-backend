@@ -27,14 +27,14 @@ line-length = 88
 
 [tool.isort]
 profile = "black"
-skip_glob = ["src/generated/*"]
+skip_glob = ["src/prisma_client/*"]
 
 [tool.ruff]
 line-length = 88
 
 [tool.mypy]
 strict = true
-exclude = ["src/generated"]
+exclude = ["src/prisma_client"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

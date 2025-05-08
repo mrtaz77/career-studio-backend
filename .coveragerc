@@ -1,0 +1,19 @@
+[run]
+branch = True
+source = src
+omit =
+    src/prisma_client/*
+    src/logger.py
+    src/server.py
+    
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+
+[paths]
+source =
+    src
+
+[html]
+directory = htmlcov

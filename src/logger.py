@@ -5,6 +5,27 @@ from colorlog import ColoredFormatter
 
 def setup_logging() -> None:
     """Configure logging using colorlog."""
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)  # default for all
+
+    # Clean up old handlers to prevent duplicates
+    _clear_existing_handlers(root)
+
+    handler = _create_stream_handler()
+    root.addHandler(handler)
+
+    # Set specific log levels for external libraries
+    _set_library_log_levels()
+
+
+def _clear_existing_handlers(logger: logging.Logger) -> None:
+    """Remove existing handlers from the logger."""
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+
+def _create_stream_handler() -> logging.Handler:
+    """Create and configure a stream handler with a colored formatter."""
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
 
@@ -18,19 +39,14 @@ def setup_logging() -> None:
             "CRITICAL": "bold_red",
         },
     )
-
     handler.setFormatter(formatter)
+    return handler
 
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)  # default for all
 
-    # Clean up old handlers to prevent duplicates
-    root.handlers.clear()
-    root.addHandler(handler)
-
-    logging.getLogger("httpcore").setLevel(logging.WARNING)
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("src.generated").setLevel(logging.WARNING)
+def _set_library_log_levels() -> None:
+    """Set specific log levels for external libraries."""
+    for logger_name in ["httpcore", "httpx", "src.prisma_client"]:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
 setup_logging()

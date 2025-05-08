@@ -42,6 +42,7 @@ jobs:
           echo "HOST=${{ secrets.HOST }}" >> .env
           echo "PORT=${{ secrets.PORT }}" >> .env
           echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
         shell: bash
 
       - name: Run black
@@ -58,8 +59,7 @@ jobs:
 
       - name: Run pytest with coverage
         run: |
-          poetry run pytest --cov=src --cov-report=xml
-          ls -l coverage.xml  # Check if coverage.xml exists
+          poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml
       
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
