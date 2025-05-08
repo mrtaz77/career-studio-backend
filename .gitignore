@@ -1,7 +1,15 @@
+# Added
+node_modules/
+.scannerwork/
+prisma_client/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Coverage report
+coverage.lcov
 
 # C extensions
 *.so
