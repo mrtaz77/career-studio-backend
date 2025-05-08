@@ -18,13 +18,26 @@ def main():
             print("No staged Python files to format.")
             return 0
 
+        # Check for partially staged files
+        partially_staged = [
+            f
+            for f in files
+            if run_cmd(f"git diff --name-only {f}")  # has unstaged changes
+        ]
+        if partially_staged:
+            print("Some files are partially staged:")
+            for f in partially_staged:
+                print(f"   - {f}")
+            print("   Formatting will affect unstaged changes as well.")
+
+        # Format all staged file paths
         file_list = " ".join(f'"{f}"' for f in files)
-        print(f"Formatting staged files: {file_list}")
+        print(f"Formatting: {file_list}")
 
         run_cmd(f"black {file_list}")
         run_cmd(f"isort {file_list}")
         run_cmd(f"git add {file_list}")
-        print("Formatting and re-staging complete.")
+        print("Formatting complete and files re-staged.")
         return 0
 
     except subprocess.CalledProcessError as e:
