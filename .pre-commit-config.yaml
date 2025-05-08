@@ -1,14 +1,27 @@
 repos:
-  - repo: local
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
     hooks:
-      - id: format-staged
-        name: Format only staged Python files (black + isort)
-        entry: python .hooks/format_staged.py
-        language: system
-        types: [python]
-        pass_filenames: false
+      - id: black
+        args: ["--quiet"]
+
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1
+    hooks:
+      - id: isort
+        args: ["--quiet"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.8
     hooks:
       - id: ruff
+        args: ["--fix"]
+
+  - repo: local
+    hooks:
+      - id: mypy-on-staged
+        name: Run mypy on staged files
+        entry: python .hooks/mypy_staged.py
+        language: system
+        types: [python]
+        pass_filenames: false
