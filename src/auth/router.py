@@ -33,11 +33,14 @@ class AuthResponse(BaseModel):
         401: {"description": "Invalid or missing token"},
     },
 )
-async def signup(_creds: HTTPAuthorizationCredentials = Depends(security)):
+async def signup(
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> AuthResponse:
     """
     Expects: Bearer <Firebase Token> in the Authorization header.
     """
-    return {"message": "Stub: User created"}
+    # Stub logic for user creation
+    return AuthResponse(message="Stub: User created")
 
 
 @router.post(
@@ -52,8 +55,11 @@ async def signup(_creds: HTTPAuthorizationCredentials = Depends(security)):
         403: {"description": "User authenticated but not registered"},
     },
 )
-async def signin(_creds: HTTPAuthorizationCredentials = Depends(security)):
+async def signin(
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> AuthResponse:
     """
     Expects: Bearer <Firebase Token> in the Authorization header.
     """
-    return {"message": "Stub: User signed in"}
+    # Stub logic for user sign-in
+    return AuthResponse(message="Stub: User signed in")

@@ -52,8 +52,8 @@ class UserProfileUpdate(BaseModel):
 )
 async def get_profile(
     _creds: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-):
-    return {"img": USER_IMG, "email": USER_EMAIL, "name": "Stub User"}
+) -> UserProfile:
+    return UserProfile(img=USER_IMG, email=USER_EMAIL, name="Stub User")
 
 
 @router.patch(
@@ -72,5 +72,5 @@ async def get_profile(
 async def update_profile(
     _creds: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     _data: UserProfileUpdate,
-):
-    return {"email": _data.email, "name": _data.name, "img": _data.img}
+) -> UserProfile:
+    return UserProfile(img=_data.img, email=USER_EMAIL, name=_data.name)
