@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from src.constants import headers, methods, origins
+from src.database import lifespan
 from src.middlewares import LimitBodySizeMiddleware
 
 
@@ -37,6 +38,6 @@ def add_middlewares(app: FastAPI) -> None:
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    app = FastAPI(title="Career Studio API")
+    app = FastAPI(title="Career Studio API", lifespan=lifespan)
     add_middlewares(app)
     return app
