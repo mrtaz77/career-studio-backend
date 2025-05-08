@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from src.auth.docs import auth_tags_metadata
+from src.users.docs import user_tags_metadata
 
-all_tags_metadata = auth_tags_metadata
+all_tags_metadata = auth_tags_metadata + user_tags_metadata
 
 
 def inject_global_bearer_auth(app: FastAPI) -> None:

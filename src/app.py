@@ -7,6 +7,7 @@ from src.constants import API_PREFIX, VERSION, headers, methods, origins
 from src.database import lifespan
 from src.middlewares import LimitBodySizeMiddleware
 from src.opeanapi import inject_global_bearer_auth
+from src.users.router import router as user_router
 
 
 def configure_cors(app: FastAPI) -> None:
@@ -41,6 +42,7 @@ def add_middlewares(app: FastAPI) -> None:
 def include_routers(app: FastAPI) -> None:
     """Include all routers in the app."""
     app.include_router(auth_router, prefix=API_PREFIX)
+    app.include_router(user_router, prefix=API_PREFIX)
 
 
 def create_app() -> FastAPI:
