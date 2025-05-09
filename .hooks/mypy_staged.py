@@ -14,10 +14,6 @@ def main():
         print("No Python files to check.")
         return 0
 
-    file_list = " ".join(f'"{str(f)}"' for f in files)
-    print(f"Running mypy on:\n{file_list}")
-    print("Using Python from:", sys.executable)
-
     result = subprocess.run(
         [
             sys.executable,
