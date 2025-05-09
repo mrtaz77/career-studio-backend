@@ -1,22 +1,34 @@
 import subprocess
 import sys
-
-
-def run_cmd(cmd, check=True):
-    return subprocess.run(
-        cmd, shell=True, text=True, check=check, stdout=subprocess.PIPE
-    ).stdout.strip()
+from pathlib import Path
 
 
 def main():
-    files = run_cmd("git diff --name-only --cached -- '*.py'").splitlines()
+    files = [
+        f
+        for f in Path("src").rglob("*.py")
+        if "src/prisma_client" not in str(f).replace("\\", "/")
+    ]
+
     if not files:
-        print("No staged Python files for mypy.")
+        print("No Python files to check.")
         return 0
 
-    file_list = " ".join(f'"{f}"' for f in files)
-    print(f"Running mypy on: {file_list}")
-    result = subprocess.run(f"mypy {file_list}", shell=True)
+    file_list = " ".join(f'"{str(f)}"' for f in files)
+    print(f"Running mypy on:\n{file_list}")
+    print("Using Python from:", sys.executable)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mypy",
+            *files,
+        ]
+    )
+
+    if result.returncode != 0:
+        print("Mypy failed - blocking commit")
     return result.returncode
 
 

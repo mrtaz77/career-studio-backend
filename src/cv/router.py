@@ -42,15 +42,15 @@ class CVResponse(BaseModel):
     response_model=CVResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def generate_cv(payload: CVGenerationRequest):
+async def generate_cv(payload: CVGenerationRequest) -> CVResponse:
     """
     This endpoint accepts structured user input and returns a generated CV ID.
     """
-    return {
-        "id": 1,
-        "title": f"{payload.cv_type.capitalize()} CV",
-        "message": "CV generated successfully",
-    }
+    return CVResponse(
+        id=1,
+        title=f"{payload.cv_type.capitalize()} CV",
+        message="CV generated successfully",
+    )
 
 
 @router.get(
@@ -62,7 +62,7 @@ async def generate_cv(payload: CVGenerationRequest):
         404: {"description": "CV not found"},
     },
 )
-async def preview_cv(cv_id: int):
+async def preview_cv(cv_id: int) -> FileResponse:
     pdf_path = f"generated_cvs/{cv_id}.pdf"
     return FileResponse(path=pdf_path, media_type="application/pdf")
 
@@ -76,7 +76,7 @@ async def preview_cv(cv_id: int):
         404: {"description": "CV not found"},
     },
 )
-async def download_cv(cv_id: int):
+async def download_cv(cv_id: int) -> FileResponse:
     pdf_path = f"generated_cvs/{cv_id}.pdf"
     return FileResponse(
         path=pdf_path,
@@ -97,7 +97,7 @@ async def list_cvs(
     _title: Optional[str] = Query(None),
     _created_before: Optional[date] = Query(None),
     _created_after: Optional[date] = Query(None),
-):
+) -> List[CVResponse]:
     return []
 
 
@@ -116,7 +116,7 @@ class BookmarkRequest(BaseModel):
         400: {"description": "Invalid input"},
     },
 )
-async def bookmark_cv(cv_id: int, data: BookmarkRequest):
+async def bookmark_cv(cv_id: int, data: BookmarkRequest) -> dict[str, str]:
     return {"message": f"Bookmarked CV {cv_id} under {data.category}"}
 
 
@@ -131,7 +131,7 @@ async def view_bookmarks(
     _title: Optional[str] = Query(None),
     _created_before: Optional[date] = Query(None),
     _created_after: Optional[date] = Query(None),
-):
+) -> List[CVResponse]:
     return []
 
 
@@ -141,7 +141,7 @@ async def view_bookmarks(
     description="Deletes a CV by ID.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_cv(_cv_id: int):
+async def delete_cv(_cv_id: int) -> None:
     return
 
 
@@ -156,13 +156,13 @@ async def delete_cv(_cv_id: int):
         400: {"description": "Invalid input"},
     },
 )
-async def update_cv(cv_id: int, data: CVUpdateRequest):
+async def update_cv(cv_id: int, data: CVUpdateRequest) -> CVResponse:
     """
     This endpoint lets users update full CV structure: education, experience, tone, etc.
     All fields are optional and will update only what's provided.
     """
-    return {
-        "id": cv_id,
-        "title": data.full_name or "Edited CV",
-        "message": "CV updated successfully",
-    }
+    return CVResponse(
+        id=cv_id,
+        title=data.full_name or "Edited CV",
+        message="CV updated successfully",
+    )

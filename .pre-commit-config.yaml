@@ -21,7 +21,8 @@ repos:
     hooks:
       - id: mypy-on-staged
         name: Run mypy on staged files
-        entry: python .hooks/mypy_staged.py
+        entry: .venv\\Scripts\\python.exe .hooks/mypy_staged.py
         language: system
         types: [python]
         pass_filenames: false
+        always_run: true
