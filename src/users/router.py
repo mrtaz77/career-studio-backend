@@ -20,18 +20,20 @@ class UserProfile(BaseModel):
     email: EmailStr
     name: str
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {"img": USER_IMG, "email": USER_EMAIL, "name": "John Doe"}
         }
+    }
 
 
 class UserProfileUpdate(BaseModel):
     name: str
     img: str
 
-    class Config:
-        schema_extra = {"example": {"name": "Jane Doe", "img": USER_IMG}}
+    model_config = {
+        "json_schema_extra": {"example": {"name": "Jane Doe", "img": USER_IMG}}
+    }
 
 
 # ====================
