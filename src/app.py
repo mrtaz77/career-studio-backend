@@ -4,6 +4,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from src.auth.router import router as auth_router
 from src.constants import API_PREFIX, VERSION, headers, methods, origins
+from src.cv.router import router as cv_router
 from src.database import lifespan
 from src.middlewares import LimitBodySizeMiddleware
 from src.opeanapi import inject_global_bearer_auth
@@ -43,6 +44,7 @@ def include_routers(app: FastAPI) -> None:
     """Include all routers in the app."""
     app.include_router(auth_router, prefix=API_PREFIX)
     app.include_router(user_router, prefix=API_PREFIX)
+    app.include_router(cv_router, prefix=API_PREFIX)
 
 
 def create_app() -> FastAPI:
@@ -56,6 +58,7 @@ def create_app() -> FastAPI:
             "url": "https://opensource.org/licenses/Apache-2.0",
         },
         docs_url="/api/v1/docs",
+        redoc_url="/api/v1/redoc",
         lifespan=lifespan,
     )
     add_middlewares(app)
