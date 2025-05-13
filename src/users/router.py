@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr
 from src.users.constants import USER_EMAIL, USER_IMG
 
 router = APIRouter(tags=["User"], prefix="/users")
-security = HTTPBearer(auto_error=False)
+security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
 
 
 # ====================

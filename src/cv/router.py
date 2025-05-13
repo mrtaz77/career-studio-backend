@@ -1,13 +1,15 @@
 from datetime import date
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from src.cv.schemas import CVGenerationRequest, CVUpdateRequest
 
 router = APIRouter(tags=["CV"], prefix="/cv")
+security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
 
 
 # ====================
@@ -42,14 +44,37 @@ class CVResponse(BaseModel):
     response_model=CVResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def generate_cv(payload: CVGenerationRequest) -> CVResponse:
-    """
-    This endpoint accepts structured user input and returns a generated CV ID.
-    """
+async def generate_cv(
+    payload: CVGenerationRequest,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> CVResponse:
     return CVResponse(
         id=1,
         title=f"{payload.cv_type.capitalize()} CV",
         message="CV generated successfully",
+    )
+
+
+@router.get(
+    "/{cv_id}",
+    summary="Get a CV by ID",
+    description="Returns the full metadata of a specific CV by its ID.",
+    response_model=CVResponse,
+    responses={
+        200: {"description": "CV found"},
+        404: {"description": "CV not found"},
+        401: {"description": "Unauthorized"},
+    },
+)
+async def get_cv_by_id(
+    cv_id: int,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> CVResponse:
+    # Stubbed logic
+    return CVResponse(
+        id=cv_id,
+        title="Example CV",
+        message="CV fetched successfully",
     )
 
 
@@ -62,7 +87,10 @@ async def generate_cv(payload: CVGenerationRequest) -> CVResponse:
         404: {"description": "CV not found"},
     },
 )
-async def preview_cv(cv_id: int) -> FileResponse:
+async def preview_cv(
+    cv_id: int,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> FileResponse:
     pdf_path = f"generated_cvs/{cv_id}.pdf"
     return FileResponse(path=pdf_path, media_type="application/pdf")
 
@@ -76,7 +104,10 @@ async def preview_cv(cv_id: int) -> FileResponse:
         404: {"description": "CV not found"},
     },
 )
-async def download_cv(cv_id: int) -> FileResponse:
+async def download_cv(
+    cv_id: int,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> FileResponse:
     pdf_path = f"generated_cvs/{cv_id}.pdf"
     return FileResponse(
         path=pdf_path,
@@ -97,6 +128,7 @@ async def list_cvs(
     _title: Optional[str] = Query(None),
     _created_before: Optional[date] = Query(None),
     _created_after: Optional[date] = Query(None),
+    _creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> List[CVResponse]:
     return []
 
@@ -116,7 +148,11 @@ class BookmarkRequest(BaseModel):
         400: {"description": "Invalid input"},
     },
 )
-async def bookmark_cv(cv_id: int, data: BookmarkRequest) -> dict[str, str]:
+async def bookmark_cv(
+    cv_id: int,
+    data: BookmarkRequest,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> dict[str, str]:
     return {"message": f"Bookmarked CV {cv_id} under {data.category}"}
 
 
@@ -131,6 +167,7 @@ async def view_bookmarks(
     _title: Optional[str] = Query(None),
     _created_before: Optional[date] = Query(None),
     _created_after: Optional[date] = Query(None),
+    _creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> List[CVResponse]:
     return []
 
@@ -141,12 +178,15 @@ async def view_bookmarks(
     description="Deletes a CV by ID.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_cv(_cv_id: int) -> None:
+async def delete_cv(
+    cv_id: int,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> None:
     return
 
 
 @router.patch(
-    "/cv/{cv_id}",
+    "/{cv_id}",
     summary="Update CV data",
     description="Allows partial updates to any structured field in the CV, using the same format as the generation input.",
     response_model=CVResponse,
@@ -156,11 +196,11 @@ async def delete_cv(_cv_id: int) -> None:
         400: {"description": "Invalid input"},
     },
 )
-async def update_cv(cv_id: int, data: CVUpdateRequest) -> CVResponse:
-    """
-    This endpoint lets users update full CV structure: education, experience, tone, etc.
-    All fields are optional and will update only what's provided.
-    """
+async def update_cv(
+    cv_id: int,
+    data: CVUpdateRequest,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> CVResponse:
     return CVResponse(
         id=cv_id,
         title=data.full_name or "Edited CV",

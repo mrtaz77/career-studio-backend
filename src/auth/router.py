@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
-security = HTTPBearer(auto_error=False)
+security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
 
 
 # ====================
