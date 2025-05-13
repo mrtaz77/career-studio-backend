@@ -22,14 +22,15 @@ class CVResponse(BaseModel):
     title: str
     message: str
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "id": 1,
                 "title": "Academic CV",
                 "message": "CV generated successfully",
             }
         }
+    }
 
 
 # ====================
