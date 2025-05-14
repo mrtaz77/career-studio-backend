@@ -71,7 +71,6 @@ class CVGenerationRequest(BaseModel):
 
     cv_type: Literal["academic", "industry"]
     tone: Optional[Literal["formal", "concise", "creative"]]
-    language: Optional[str]  # e.g., "en", "de"
 
 
 class CVUpdateRequest(BaseModel):
@@ -92,4 +91,3 @@ class CVUpdateRequest(BaseModel):
 
     cv_type: Optional[Literal["academic", "industry"]]
     tone: Optional[Literal["formal", "concise", "creative"]]
-    language: Optional[str]

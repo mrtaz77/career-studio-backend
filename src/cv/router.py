@@ -71,7 +71,6 @@ async def get_cv_by_id(
     cv_id: int,
     _creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> CVResponse:
-    # Stubbed logic
     return CVResponse(
         id=cv_id,
         title="Example CV",
@@ -187,23 +186,46 @@ async def delete_cv(
 
 
 @router.patch(
-    "/{cv_id}",
-    summary="Update CV data",
-    description="Allows partial updates to any structured field in the CV, using the same format as the generation input.",
+    "/{cv_id}/save",
+    summary="Autosave CV (partial update)",
+    description="Used to autosave updates made to a CV without requiring full data.",
     response_model=CVResponse,
     responses={
-        200: {"description": "CV successfully updated"},
+        200: {"description": "CV autosaved successfully"},
         404: {"description": "CV not found"},
         400: {"description": "Invalid input"},
     },
 )
-async def update_cv(
+async def autosave_cv(
     cv_id: int,
     data: CVUpdateRequest,
     _creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> CVResponse:
     return CVResponse(
         id=cv_id,
-        title=data.full_name or "Edited CV",
-        message="CV updated successfully",
+        title=data.full_name or "Autosaved CV",
+        message="CV autosaved successfully",
+    )
+
+
+@router.put(
+    "/{cv_id}/save",
+    summary="Manually save CV (full update)",
+    description="Fully updates the CV. Used when a user clicks 'Save' button to persist all fields.",
+    response_model=CVResponse,
+    responses={
+        200: {"description": "CV successfully saved"},
+        404: {"description": "CV not found"},
+        400: {"description": "Invalid input"},
+    },
+)
+async def save_cv(
+    cv_id: int,
+    data: CVGenerationRequest,
+    _creds: HTTPAuthorizationCredentials = Depends(security),
+) -> CVResponse:
+    return CVResponse(
+        id=cv_id,
+        title=f"{data.cv_type.capitalize()} CV",
+        message="CV successfully saved",
     )
