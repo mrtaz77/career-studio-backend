@@ -2,9 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.constants import headers, methods, origins
+from src.auth.router import router as auth_router
+from src.constants import API_PREFIX, VERSION, headers, methods, origins
+from src.cv.router import router as cv_router
 from src.database import lifespan
+from src.job.router import router as job_router
 from src.middlewares import LimitBodySizeMiddleware
+from src.opeanapi import inject_global_bearer_auth
+from src.portfolio.router import router as portfolio_router
+from src.users.router import router as user_router
 
 
 def configure_cors(app: FastAPI) -> None:
@@ -36,8 +42,30 @@ def add_middlewares(app: FastAPI) -> None:
     configure_limit_body_size(app)
 
 
+def include_routers(app: FastAPI) -> None:
+    """Include all routers in the app."""
+    app.include_router(auth_router, prefix=API_PREFIX)
+    app.include_router(user_router, prefix=API_PREFIX)
+    app.include_router(cv_router, prefix=API_PREFIX)
+    app.include_router(portfolio_router, prefix=API_PREFIX)
+    app.include_router(job_router)
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    app = FastAPI(title="Career Studio API", lifespan=lifespan)
+    app = FastAPI(
+        title="Career Studio API",
+        description="API documentation for Career Studio backend",
+        version=VERSION,
+        license_info={
+            "name": "Apache 2.0",
+            "url": "https://opensource.org/licenses/Apache-2.0",
+        },
+        docs_url="/api/v1/docs",
+        redoc_url="/api/v1/redoc",
+        lifespan=lifespan,
+    )
     add_middlewares(app)
+    include_routers(app)
+    inject_global_bearer_auth(app)
     return app
