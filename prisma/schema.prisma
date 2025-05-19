@@ -23,37 +23,38 @@ model User {
 }
 
 model CV {
-  id                      Int      @id @default(autoincrement())
-  user_id                 String   @db.Text
+  id                      Int              @id @default(autoincrement())
+  user_id                 String           @db.Text
   type                    String
-  bookmark                Boolean  @default(false)
-  is_draft                Boolean  @default(true)
+  bookmark                Boolean          @default(false)
+  is_draft                Boolean          @default(true)
   pdf_url                 String?
   preview_url             String?
   latest_saved_version_id Int?
-  created_at              DateTime @db.Timestamp(6)
-  updated_at              DateTime @db.Timestamp(6)
+  created_at              DateTime         @db.Timestamp(6)
+  updated_at              DateTime         @db.Timestamp(6)
 
-  user                    User     @relation(fields: [user_id], references: [uid])
-  latest_version          CVVersion? @relation(fields: [latest_saved_version_id], references: [id])
+  user                    User             @relation(fields: [user_id], references: [uid])
   education               Education[]
   experience              Experience[]
   certifications          Certification[]
   publications            Publication[]
   projects                Project[]
   technical_skills        TechnicalSkill[]
-  versions                CVVersion[]
+  latest_version          CVVersion?       @relation(name: "LatestVersion", fields: [latest_saved_version_id], references: [id])
+  versions                CVVersion[]      @relation(name: "AllVersions")
 }
 
 model CVVersion {
-  id            Int      @id @default(autoincrement())
-  cv_id         Int
+  id             Int       @id @default(autoincrement())
+  cv_id          Int
   version_number Int
-  pdf_url       String
-  preview_url   String
-  created_at    DateTime @db.Timestamp(6)
+  pdf_url        String
+  preview_url    String
+  created_at     DateTime  @db.Timestamp(6)
 
-  cv            CV       @relation(fields: [cv_id], references: [id])
+  cv             CV        @relation(name: "AllVersions", fields: [cv_id], references: [id], map: "fk_cvversion_allversions")
+  referenced_by  CV[]      @relation(name: "LatestVersion")
 }
 
 model Education {
@@ -101,26 +102,37 @@ model Certification {
 }
 
 model Publication {
-  id       Int     @id @default(autoincrement())
+  id       Int           @id @default(autoincrement())
   cv_id    Int
   title    String
   journal  String
   year     Int
   link     String
 
-  cv       CV      @relation(fields: [cv_id], references: [id])
-  urls     ResourceURL[]
+  cv       CV            @relation(fields: [cv_id], references: [id])
+  urls     ResourceURL[] @relation(name: "PublicationURLs")
 }
 
 model Project {
-  id          Int       @id @default(autoincrement())
-  cv_id       Int
-  name        String
-  description String
+  id           Int                 @id @default(autoincrement())
+  cv_id        Int
+  name         String
+  description  String
 
-  cv          CV        @relation(fields: [cv_id], references: [id])
+  cv           CV                  @relation(fields: [cv_id], references: [id])
   technologies ProjectTechnology[]
-  urls         ResourceURL[]
+  urls         ResourceURL[]       @relation(name: "ProjectURLs")
+}
+
+model ResourceURL {
+  id          Int          @id @default(autoincrement())
+  source_id   Int
+  source_type String
+  label       String
+  url         String
+
+  project     Project?     @relation("ProjectURLs", fields: [source_id], references: [id], map: "fk_resourceurl_projecturls")
+  publication Publication? @relation("PublicationURLs", fields: [source_id], references: [id], map: "fk_resourceurl_publicationurls")
 }
 
 model ProjectTechnology {
@@ -129,17 +141,6 @@ model ProjectTechnology {
   technology  String
 
   project     Project @relation(fields: [project_id], references: [id])
-}
-
-model ResourceURL {
-  id          Int     @id @default(autoincrement())
-  source_id   Int
-  source_type String
-  label       String
-  url         String
-
-  project     Project?     @relation("ProjectURLs", fields: [source_id], references: [id])
-  publication Publication? @relation("PublicationURLs", fields: [source_id], references: [id])
 }
 
 model TechnicalSkill {
