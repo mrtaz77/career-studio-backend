@@ -10,10 +10,143 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
+  uid         String   @id @db.Text
+  username    String   @unique
+  full_name   String
   email       String   @unique
-  name        String 
-  firebaseUid String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  address     String
+  phone       String
+  created_at  DateTime @db.Timestamp(6)
+  updated_at  DateTime @db.Timestamp(6)
+
+  cvs         CV[]
+}
+
+model CV {
+  id                      Int      @id @default(autoincrement())
+  user_id                 String   @db.Text
+  type                    String
+  bookmark                Boolean  @default(false)
+  is_draft                Boolean  @default(true)
+  pdf_url                 String?
+  preview_url             String?
+  latest_saved_version_id Int?
+  created_at              DateTime @db.Timestamp(6)
+  updated_at              DateTime @db.Timestamp(6)
+
+  user                    User     @relation(fields: [user_id], references: [uid])
+  latest_version          CVVersion? @relation(fields: [latest_saved_version_id], references: [id])
+  education               Education[]
+  experience              Experience[]
+  certifications          Certification[]
+  publications            Publication[]
+  projects                Project[]
+  technical_skills        TechnicalSkill[]
+  versions                CVVersion[]
+}
+
+model CVVersion {
+  id            Int      @id @default(autoincrement())
+  cv_id         Int
+  version_number Int
+  pdf_url       String
+  preview_url   String
+  created_at    DateTime @db.Timestamp(6)
+
+  cv            CV       @relation(fields: [cv_id], references: [id])
+}
+
+model Education {
+  id           Int      @id @default(autoincrement())
+  cv_id        Int
+  degree       String
+  institution  String
+  location     String
+  start_date   DateTime @db.Date
+  end_date     DateTime @db.Date
+  gpa          Float
+  honors       String
+
+  cv           CV       @relation(fields: [cv_id], references: [id])
+}
+
+model Experience {
+  id              Int      @id @default(autoincrement())
+  cv_id           Int
+  job_title       String
+  position        String
+  company         String
+  company_url     String
+  company_logo    String
+  location        String
+  employment_type String
+  location_type   String
+  industry        String
+  start_date      DateTime @db.Date
+  end_date        DateTime @db.Date
+  description     String
+
+  cv              CV       @relation(fields: [cv_id], references: [id])
+}
+
+model Certification {
+  id           Int      @id @default(autoincrement())
+  cv_id        Int
+  title        String
+  issuer       String
+  issued_date  DateTime @db.Date
+  link         String
+
+  cv           CV       @relation(fields: [cv_id], references: [id])
+}
+
+model Publication {
+  id       Int     @id @default(autoincrement())
+  cv_id    Int
+  title    String
+  journal  String
+  year     Int
+  link     String
+
+  cv       CV      @relation(fields: [cv_id], references: [id])
+  urls     ResourceURL[]
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  cv_id       Int
+  name        String
+  description String
+
+  cv          CV        @relation(fields: [cv_id], references: [id])
+  technologies ProjectTechnology[]
+  urls         ResourceURL[]
+}
+
+model ProjectTechnology {
+  id          Int     @id @default(autoincrement())
+  project_id  Int
+  technology  String
+
+  project     Project @relation(fields: [project_id], references: [id])
+}
+
+model ResourceURL {
+  id          Int     @id @default(autoincrement())
+  source_id   Int
+  source_type String
+  label       String
+  url         String
+
+  project     Project?     @relation("ProjectURLs", fields: [source_id], references: [id])
+  publication Publication? @relation("PublicationURLs", fields: [source_id], references: [id])
+}
+
+model TechnicalSkill {
+  id       Int     @id @default(autoincrement())
+  cv_id    Int
+  category String
+  name     String
+
+  cv       CV      @relation(fields: [cv_id], references: [id])
 }
