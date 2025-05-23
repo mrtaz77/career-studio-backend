@@ -1,53 +1,30 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "User" (
+    "uid" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "full_name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
-  - You are about to drop the column `cv_id` on the `Certification` table. All the data in the column will be lost.
-  - You are about to drop the column `cv_id` on the `Education` table. All the data in the column will be lost.
-  - You are about to drop the column `cv_id` on the `Experience` table. All the data in the column will be lost.
-  - You are about to drop the column `cv_id` on the `Project` table. All the data in the column will be lost.
-  - You are about to drop the column `cv_id` on the `Publication` table. All the data in the column will be lost.
-  - You are about to drop the column `cv_id` on the `TechnicalSkill` table. All the data in the column will be lost.
+    CONSTRAINT "User_pkey" PRIMARY KEY ("uid")
+);
 
-*/
--- DropForeignKey
-ALTER TABLE "Certification" DROP CONSTRAINT "Certification_cv_id_fkey";
+-- CreateTable
+CREATE TABLE "Education" (
+    "id" SERIAL NOT NULL,
+    "degree" TEXT NOT NULL,
+    "institution" TEXT NOT NULL,
+    "location" TEXT NOT NULL,
+    "start_date" DATE NOT NULL,
+    "end_date" DATE NOT NULL,
+    "gpa" DOUBLE PRECISION NOT NULL,
+    "honors" TEXT NOT NULL,
 
--- DropForeignKey
-ALTER TABLE "Education" DROP CONSTRAINT "Education_cv_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Experience" DROP CONSTRAINT "Experience_cv_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Project" DROP CONSTRAINT "Project_cv_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "Publication" DROP CONSTRAINT "Publication_cv_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "TechnicalSkill" DROP CONSTRAINT "TechnicalSkill_cv_id_fkey";
-
--- AlterTable
-ALTER TABLE "Certification" DROP COLUMN "cv_id";
-
--- AlterTable
-ALTER TABLE "Education" DROP COLUMN "cv_id";
-
--- AlterTable
-ALTER TABLE "Experience" DROP COLUMN "cv_id";
-
--- AlterTable
-ALTER TABLE "Project" DROP COLUMN "cv_id";
-
--- AlterTable
-ALTER TABLE "Publication" DROP COLUMN "cv_id";
-
--- AlterTable
-ALTER TABLE "TechnicalSkill" DROP COLUMN "cv_id";
-
--- AlterTable
-ALTER TABLE "User" ALTER COLUMN "created_at" SET DATA TYPE TIMESTAMP(3),
-ALTER COLUMN "updated_at" SET DATA TYPE TIMESTAMP(3);
+    CONSTRAINT "Education_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "CV_Education" (
@@ -55,6 +32,25 @@ CREATE TABLE "CV_Education" (
     "education_id" INTEGER NOT NULL,
 
     CONSTRAINT "CV_Education_pkey" PRIMARY KEY ("cv_id","education_id")
+);
+
+-- CreateTable
+CREATE TABLE "Experience" (
+    "id" SERIAL NOT NULL,
+    "job_title" TEXT NOT NULL,
+    "position" TEXT NOT NULL,
+    "company" TEXT NOT NULL,
+    "company_url" TEXT NOT NULL,
+    "company_logo" TEXT NOT NULL,
+    "location" TEXT NOT NULL,
+    "employment_type" TEXT NOT NULL,
+    "location_type" TEXT NOT NULL,
+    "industry" TEXT NOT NULL,
+    "start_date" DATE NOT NULL,
+    "end_date" DATE NOT NULL,
+    "description" TEXT NOT NULL,
+
+    CONSTRAINT "Experience_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -66,11 +62,33 @@ CREATE TABLE "CV_Experience" (
 );
 
 -- CreateTable
+CREATE TABLE "Certification" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "issuer" TEXT NOT NULL,
+    "issued_date" DATE NOT NULL,
+    "link" TEXT NOT NULL,
+
+    CONSTRAINT "Certification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CV_Certification" (
     "cv_id" INTEGER NOT NULL,
     "certification_id" INTEGER NOT NULL,
 
     CONSTRAINT "CV_Certification_pkey" PRIMARY KEY ("cv_id","certification_id")
+);
+
+-- CreateTable
+CREATE TABLE "Publication" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "journal" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "link" TEXT NOT NULL,
+
+    CONSTRAINT "Publication_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -82,6 +100,15 @@ CREATE TABLE "CV_Publication" (
 );
 
 -- CreateTable
+CREATE TABLE "Project" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CV_Project" (
     "cv_id" INTEGER NOT NULL,
     "project_id" INTEGER NOT NULL,
@@ -90,11 +117,68 @@ CREATE TABLE "CV_Project" (
 );
 
 -- CreateTable
+CREATE TABLE "ProjectTechnology" (
+    "id" SERIAL NOT NULL,
+    "project_id" INTEGER NOT NULL,
+    "technology" TEXT NOT NULL,
+
+    CONSTRAINT "ProjectTechnology_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ResourceURL" (
+    "id" SERIAL NOT NULL,
+    "source_id" INTEGER NOT NULL,
+    "source_type" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+
+    CONSTRAINT "ResourceURL_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TechnicalSkill" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+
+    CONSTRAINT "TechnicalSkill_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CV_TechnicalSkill" (
     "cv_id" INTEGER NOT NULL,
     "tech_skill_id" INTEGER NOT NULL,
 
     CONSTRAINT "CV_TechnicalSkill_pkey" PRIMARY KEY ("cv_id","tech_skill_id")
+);
+
+-- CreateTable
+CREATE TABLE "CV" (
+    "id" SERIAL NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "bookmark" BOOLEAN NOT NULL DEFAULT false,
+    "is_draft" BOOLEAN NOT NULL DEFAULT true,
+    "pdf_url" TEXT,
+    "preview_url" TEXT,
+    "latest_saved_version_id" INTEGER,
+    "created_at" TIMESTAMP(6) NOT NULL,
+    "updated_at" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "CV_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CVVersion" (
+    "id" SERIAL NOT NULL,
+    "cv_id" INTEGER NOT NULL,
+    "version_number" INTEGER NOT NULL,
+    "pdf_url" TEXT NOT NULL,
+    "preview_url" TEXT NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "CVVersion_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -174,14 +258,11 @@ CREATE TABLE "Portfolio_Research" (
     CONSTRAINT "Portfolio_Research_pkey" PRIMARY KEY ("portfolio_id","publication_id")
 );
 
--- RenameForeignKey
-ALTER TABLE "CVVersion" RENAME CONSTRAINT "fk_cvversion_allversions" TO "CVVersion_cv_id_fkey";
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
--- RenameForeignKey
-ALTER TABLE "ResourceURL" RENAME CONSTRAINT "fk_resourceurl_projecturls" TO "FKEY_PROJECT_ID_RESOURCEURL_SOURCE_ID";
-
--- RenameForeignKey
-ALTER TABLE "ResourceURL" RENAME CONSTRAINT "fk_resourceurl_publicationurls" TO "FKEY_PUBLICATION_ID_RESOURCEURL_SOURCE_ID";
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- AddForeignKey
 ALTER TABLE "CV_Education" ADD CONSTRAINT "CV_Education_cv_id_fkey" FOREIGN KEY ("cv_id") REFERENCES "CV"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -214,10 +295,28 @@ ALTER TABLE "CV_Project" ADD CONSTRAINT "CV_Project_cv_id_fkey" FOREIGN KEY ("cv
 ALTER TABLE "CV_Project" ADD CONSTRAINT "CV_Project_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "ProjectTechnology" ADD CONSTRAINT "ProjectTechnology_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ResourceURL" ADD CONSTRAINT "FKEY_PROJECT_ID_RESOURCEURL_SOURCE_ID" FOREIGN KEY ("source_id") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ResourceURL" ADD CONSTRAINT "FKEY_PUBLICATION_ID_RESOURCEURL_SOURCE_ID" FOREIGN KEY ("source_id") REFERENCES "Publication"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "CV_TechnicalSkill" ADD CONSTRAINT "CV_TechnicalSkill_cv_id_fkey" FOREIGN KEY ("cv_id") REFERENCES "CV"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CV_TechnicalSkill" ADD CONSTRAINT "CV_TechnicalSkill_tech_skill_id_fkey" FOREIGN KEY ("tech_skill_id") REFERENCES "TechnicalSkill"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CV" ADD CONSTRAINT "CV_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("uid") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CV" ADD CONSTRAINT "CV_latest_saved_version_id_fkey" FOREIGN KEY ("latest_saved_version_id") REFERENCES "CVVersion"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CVVersion" ADD CONSTRAINT "CVVersion_cv_id_fkey" FOREIGN KEY ("cv_id") REFERENCES "CV"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Portfolio" ADD CONSTRAINT "Portfolio_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("uid") ON DELETE RESTRICT ON UPDATE CASCADE;
