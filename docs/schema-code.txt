@@ -1,0 +1,230 @@
+title Career Studio
+users [icon: user, color: blue] {
+  uid text pk
+  username text uk
+  full_name text
+  email text uk
+  address text
+  phone text
+  created_at timestamp
+  updated_at timestamp
+}
+
+education [icon: book, color: red] {
+  id number pk
+  degree text
+  institution text
+  location text
+  start_date date
+  end_date date
+  gpa float
+  honors text
+}
+
+cv_education [icon: link, color: gold] {
+  cv_id number fk
+  education_id number fk
+}
+
+experience [icon: briefcase, color: magenta] {
+  id number pk
+  job_title text
+  position text
+  company text
+  company_url text
+  company_logo text
+  location text
+  employment_type text
+  location_type text
+  industry text
+  start_date date
+  end_date date
+  description text
+}
+
+cv_experience [icon: link, color: orange] {
+  cv_id number fk
+  experience_id number fk
+}
+
+certifications [icon: award, color: cyan] {
+  id number pk
+  title text
+  issuer text
+  issued_date date
+  link text
+}
+
+cv_certifications [icon: link, color: magenta] {
+  cv_id number fk
+  certification_id number fk
+}
+
+publications [icon: paperclip, color: purple] {
+  id number pk
+  title text
+  journal text
+  year number
+  link text
+}
+
+cv_publications [icon: link, color: lime] {
+  cv_id number fk
+  publication_id number fk
+}
+
+projects [icon: puzzle, color: lime] {
+  id number pk
+  name text
+  description text
+}
+
+cv_projects [icon: link, color: red] {
+  cv_id number fk
+  project_id number fk
+}
+
+project_technologies [icon: chip, color: magenta] {
+  id number pk
+  project_id number fk
+  technology text
+}
+
+resource_urls [icon: globe, color: pink] {
+  id number pk
+  source_id number fk
+  source_type text
+  label text
+  url text
+}
+
+technical_skills [icon: lightning, color: red] {
+  id number pk
+  name text
+  category text
+}
+
+cv_technical_skills [icon: link, color: red] {
+  cv_id number fk
+  tech_skill_id number fk
+}
+
+cv [icon: document, color: lime] {
+  id number pk
+  user_id text fk
+  type text
+  bookmark boolean
+  is_draft boolean
+  pdf_url text
+  preview_url text
+  latest_saved_version_id number fk
+  created_at timestamp
+  updated_at timestamp
+}
+
+cv_versions [icon: file, color: gold] {
+  id number pk
+  cv_id number fk
+  version_number number
+  pdf_url text
+  preview_url text
+  created_at timestamp
+}
+
+cv.user_id > users.uid
+cv_education.cv_id <> cv.id
+cv_education.education_id > education.id
+cv_experience.cv_id <> cv.id
+cv_experience.experience_id > experience.id
+cv_certifications.cv_id <> cv.id
+cv_certifications.certification_id > certifications.id
+cv_publications.cv_id <> cv.id
+cv_publications.publication_id > publications.id
+cv_projects.cv_id <> cv.id
+cv_projects.project_id > projects.id
+cv_technical_skills.cv_id <> cv.id
+cv_technical_skills.tech_skill_id > technical_skills.id
+project_technologies.project_id > projects.id
+resource_urls.source_id > projects.id
+resource_urls.source_id > publications.id
+cv_versions.cv_id > cv.id
+cv.latest_saved_version_id > cv_versions.id
+
+
+//title Portfolio  
+portfolios [icon: briefcase, color: orange] {
+  id           int       pk
+  user_id      text      fk
+  theme        text
+  custom_domain text
+  seo_meta    jsonb
+  created_at   timestamptz
+  updated_at   timestamptz
+}
+
+portfolio_feedback [icon: message-square, color: red] {
+  id number pk
+  portfolio_id number fk
+  reviewer_id text fk
+  reviewer_name text
+  rating number
+  comment text
+  created_at timestamp
+}
+
+portfolio_education [icon: book, color: blue] {
+  portfolio_id   number  fk
+  edu_id         number  fk
+}
+
+portfolio_experience [icon: briefcase, color: cyan] {
+  portfolio_id   number  fk
+  exp_id         number  fk
+}
+
+portfolio_projects [icon: puzzle, color: orange] {
+  portfolio_id   number    fk
+  project_id     number    fk
+  thumbnail_url  text
+}
+
+portfolio_technical_skills [icon: lightning, color: gold] {
+  portfolio_id   number  fk
+  tech_skill_id  number  fk
+}
+
+portfolio_certifications [icon: award, color: lime] {
+  portfolio_id   number  fk
+  cert_id        number  fk
+}
+
+portfolio_research [icon: book-open, color: blue] {
+  portfolio_id    number  fk
+  publication_id  number  fk
+  thumbnail_url   text
+  description     text
+}
+
+
+portfolios.user_id                   > users.uid
+
+portfolio_feedback.portfolio_id      > portfolios.id
+
+portfolio_education.portfolio_id     <> portfolios.id
+portfolio_education.edu_id           > education.id
+
+portfolio_experience.portfolio_id    <> portfolios.id
+portfolio_experience.exp_id          > experience.id
+
+portfolio_projects.portfolio_id      <> portfolios.id
+portfolio_projects.project_id        > projects.id
+
+portfolio_technical_skills.portfolio_id  <> portfolios.id
+portfolio_technical_skills.tech_skill_id  > technical_skills.id
+
+portfolio_certifications.portfolio_id <> portfolios.id
+portfolio_certifications.cert_id      > certifications.id
+
+portfolio_research.portfolio_id     <> portfolios.id
+portfolio_research.publication_id   > publications.id
+portfolio_feedback.reviewer_id <> users.uid
