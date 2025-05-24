@@ -17,11 +17,11 @@ ENV PATH="$POETRY_HOME/bin:$PATH"
 RUN apk add --no-cache \
     build-base \
     curl \
+    git \
     libffi-dev \
     openssl \
     openssl-dev \
     postgresql-dev \
-    git
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
@@ -39,8 +39,6 @@ RUN poetry install --no-interaction --no-ansi --no-root --with dev
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/src/prisma_client
-
-# Fetch Prisma binaries and generate client
-RUN poetry run prisma py fetch && \
+RUN mkdir -p /app/src/prisma_client && \
+    poetry run prisma py fetch && \
     poetry run prisma generate --schema=./prisma/schema.prisma 
