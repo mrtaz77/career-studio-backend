@@ -88,10 +88,10 @@ async def get_cv_by_id(
     },
 )
 async def preview_cv(
-    cv_id: int,
+    _cv_id: int,
     _creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> FileResponse:
-    pdf_path = f"generated_cvs/{cv_id}.pdf"
+    pdf_path = "generated_cvs/cv_preview.pdf"
     return FileResponse(path=pdf_path, media_type="application/pdf")
 
 
@@ -105,15 +105,15 @@ async def preview_cv(
     },
 )
 async def download_cv(
-    cv_id: int,
+    _cv_id: int,
     _creds: HTTPAuthorizationCredentials = Depends(security),
 ) -> FileResponse:
-    pdf_path = f"generated_cvs/{cv_id}.pdf"
+    pdf_path = "generated_cvs/cv_download.pdf"
     return FileResponse(
         path=pdf_path,
-        filename=f"cv_{cv_id}.pdf",
+        filename="cv_download.pdf",
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="cv_{cv_id}.pdf"'},
+        headers={"Content-Disposition": 'attachment; filename="cv_download.pdf"'},
     )
 
 
