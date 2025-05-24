@@ -1,0 +1,23 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - HOST=${HOST:-127.0.0.1}
+      - PORT=${PORT:-8000}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - .:/app
+      - ./.env:/app/.env
+    command: >
+      sh -c "
+        poetry run prisma generate &&
+        poetry run black --check . &&
+        poetry run isort . --check-only &&
+        poetry run ruff check . &&
+        poetry run mypy src &&
+        poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml
+      " 
