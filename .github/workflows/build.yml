@@ -38,6 +38,14 @@ jobs:
         run: |
           docker compose -f docker-compose.ci.yml up --build --exit-code-from app
 
+      - name: Verify coverage report
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "coverage.xml not found!"
+            exit 1
+          fi
+          echo "Coverage report found at $(pwd)/coverage.xml"
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:

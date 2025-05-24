@@ -12,6 +12,7 @@ services:
     volumes:
       - .:/app
       - ./.env:/app/.env
+      - ./coverage.xml:/app/coverage.xml
     command: >
       sh -c "
         poetry run prisma generate &&
@@ -19,5 +20,6 @@ services:
         poetry run isort . --check-only &&
         poetry run ruff check . &&
         poetry run mypy src &&
-        poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml
+        poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml &&
+        chmod 666 coverage.xml
       " 
