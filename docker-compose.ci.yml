@@ -19,6 +19,5 @@ services:
         poetry run isort . --check-only &&
         poetry run ruff check . &&
         poetry run mypy src &&
-        poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml &&
-        cp coverage.xml /app/coverage.xml
+        poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml
       " 
