@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -43,11 +43,9 @@ jobs:
           echo "PORT=${{ secrets.PORT }}" >> .env
           echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
-        shell: bash
-      
+
       - name: Run prisma generate
-        run: |
-          poetry run prisma generate          
+        run: poetry run prisma generate
 
       - name: Run black
         run: poetry run black --check .
@@ -64,7 +62,7 @@ jobs:
       - name: Run pytest with coverage
         run: |
           poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml
-      
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
