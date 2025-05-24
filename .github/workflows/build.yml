@@ -22,8 +22,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.x'
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '1.8.2'
+
+      - name: Install dependencies
+        run: poetry install
 
       - name: Create .env file
         run: |
@@ -34,17 +44,24 @@ jobs:
           echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
 
-      - name: Run linting and tests in Docker
-        run: |
-          docker compose -f docker-compose.ci.yml up --build --exit-code-from app
+      - name: Run prisma generate
+        run: poetry run prisma generate
 
-      - name: Verify coverage report
+      - name: Run black
+        run: poetry run black --check .
+
+      - name: Run isort
+        run: poetry run isort . --check-only
+
+      - name: Run ruff
+        run: poetry run ruff check .
+
+      - name: Run mypy
+        run: poetry run mypy src
+
+      - name: Run pytest with coverage
         run: |
-          if [ ! -f coverage.xml ]; then
-            echo "coverage.xml not found!"
-            exit 1
-          fi
-          echo "Coverage report found at $(pwd)/coverage.xml"
+          poetry run pytest --cov=src --cov-branch --cov-report=term-missing --cov-report=xml
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
