@@ -40,6 +40,7 @@ jobs:
 
       - name: Verify coverage report
         run: |
+          cd backend
           if [ ! -f coverage.xml ]; then
             echo "coverage.xml not found!"
             exit 1
@@ -52,4 +53,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.python.coverage.reportPaths=backend/coverage.xml
