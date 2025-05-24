@@ -21,7 +21,7 @@ RUN apk add --no-cache \
     openssl \
     openssl-dev \
     postgresql-dev && \
-    curl -sSL https://install.python-poetry.org | python3 - && \
+    curl -ssL https://install.python-poetry.org | python3 - && \
     addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Set working directory
