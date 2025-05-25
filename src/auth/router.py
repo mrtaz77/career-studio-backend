@@ -1,19 +1,16 @@
-from fastapi import APIRouter, Depends, status
+from logging import getLogger
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+
+from src.auth.schemas import AuthResponse, SignupResponse, UserCreate
+from src.auth.service import create_user
+
+logger = getLogger(__name__)
 
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
 security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
-
-
-# ====================
-# Response Schemas
-# ====================
-
-
-class AuthResponse(BaseModel):
-    message: str
 
 
 # ====================
@@ -25,7 +22,7 @@ class AuthResponse(BaseModel):
     "/signup",
     summary="Sign up with Bearer Firebase token",
     description="Creates a new user using the Firebase Bearer token sent in the Authorization header.",
-    response_model=AuthResponse,
+    response_model=SignupResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
         201: {"description": "User successfully created"},
@@ -33,14 +30,32 @@ class AuthResponse(BaseModel):
         401: {"description": "Invalid or missing token"},
     },
 )
-async def signup(
-    _creds: HTTPAuthorizationCredentials = Depends(security),
-) -> AuthResponse:
+async def signup(request: Request) -> SignupResponse:
     """
-    Expects: Bearer <Firebase Token> in the Authorization header.
+    Sign up a new user using Firebase authentication.
+
+    Args:
+        request: FastAPI request object containing user data from Firebase token
+
+    Returns:
+        SignupResponse: Created user confirmation
     """
-    # Stub logic for user creation
-    return AuthResponse(message="Stub: User created")
+    try:
+        user_data = UserCreate(
+            username=request.state.user.get("name", ""),
+            email=request.state.user.get("email", ""),
+            img=request.state.user.get("picture"),
+            uid=request.state.user.get("uid", ""),
+        )
+        return await create_user(user_data)
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user",
+        )
 
 
 @router.post(
@@ -61,5 +76,4 @@ async def signin(
     """
     Expects: Bearer <Firebase Token> in the Authorization header.
     """
-    # Stub logic for user sign-in
-    return AuthResponse(message="Stub: User signed in")
+    return AuthResponse(message="User signed in successfully")

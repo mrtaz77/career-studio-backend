@@ -12,10 +12,11 @@ datasource db {
 model User {
   uid        String   @id
   username   String   @unique
-  full_name  String
+  full_name  String?
   email      String   @unique
-  address    String
-  phone      String
+  img        String?
+  address    String?
+  phone      String?
   created_at DateTime 
   updated_at DateTime 
 

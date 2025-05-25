@@ -9,4 +9,9 @@ app = create_app()
 
 if __name__ == "__main__":
     setup_logging()
-    uvicorn.run("src.server:app", host=settings.HOST, port=settings.PORT, reload=True)
+    uvicorn.run(
+        "src.server:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=True,
+    )
