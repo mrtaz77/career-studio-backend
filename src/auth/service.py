@@ -43,3 +43,29 @@ async def create_user(user_data: UserCreate) -> SignupResponse:
         return SignupResponse(
             username=user_data.username, message="User created successfully"
         )
+
+
+async def get_user_by_uid(uid: str) -> UserCreate:
+    """
+    Get user data by UID.
+
+    Args:
+        uid: User UID
+
+    Returns:
+        UserCreate: User data
+
+    Raises:
+        ValueError: If user not found
+    """
+    async with get_db() as db:
+        user = await db.user.find_unique(where={"uid": uid})
+        if not user:
+            raise ValueError("User not found")
+
+        return UserCreate(
+            username=user.username,
+            email=user.email,
+            img=user.img,
+            uid=user.uid,
+        )
