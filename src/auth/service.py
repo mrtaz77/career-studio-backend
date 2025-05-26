@@ -1,6 +1,7 @@
 from datetime import datetime
 from logging import getLogger
 
+from src.auth.exceptions import UserAlreadyExistsError
 from src.auth.schemas import SignupResponse, UserCreate
 from src.database import get_db
 
@@ -25,9 +26,7 @@ async def create_user(user_data: UserCreate) -> SignupResponse:
         # Check if user already exists
         existing_user = await db.user.find_unique(where={"uid": user_data.uid})
         if existing_user:
-            raise ValueError("User already exists")
-
-        logger.debug(f"Creating new user with username: {user_data.username}")
+            raise UserAlreadyExistsError()
         # Create new user
         await db.user.create(
             data={
