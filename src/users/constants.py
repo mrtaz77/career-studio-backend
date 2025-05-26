@@ -1,3 +1,4 @@
-USER_EMAIL = "email@example.com"
+"""Constants for user-related operations"""
 
-USER_IMG = "https://example.com/image.jpg"
+USER_NOT_FOUND = "User not found"
+USERNAME_UNAVAILABLE = "Username is unavailable"

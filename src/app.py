@@ -7,7 +7,7 @@ from src.constants import API_PREFIX, VERSION, headers, methods, origins
 from src.cv.router import router as cv_router
 from src.database import lifespan
 from src.job.router import router as job_router
-from src.middlewares import LimitBodySizeMiddleware
+from src.middlewares import FirebaseAuthMiddleware, LimitBodySizeMiddleware
 from src.opeanapi import inject_global_bearer_auth
 from src.portfolio.router import router as portfolio_router
 from src.users.router import router as user_router
@@ -26,13 +26,18 @@ def configure_cors(app: FastAPI) -> None:
 
 
 def configure_gzip(app: FastAPI) -> None:
-    """Add GZip compression middleware."""
+    """Add Gzip compression middleware."""
     app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 def configure_limit_body_size(app: FastAPI) -> None:
-    """Add middleware to limit request body size."""
-    app.add_middleware(LimitBodySizeMiddleware, max_bytes=1024 * 1024 * 10)  # 10 MB
+    """Add body size limit middleware."""
+    app.add_middleware(LimitBodySizeMiddleware, max_bytes=1024 * 1024 * 10)  # 10MB
+
+
+def configure_firebase_auth(app: FastAPI) -> None:
+    """Add Firebase authentication middleware."""
+    app.add_middleware(FirebaseAuthMiddleware)
 
 
 def add_middlewares(app: FastAPI) -> None:
@@ -40,6 +45,7 @@ def add_middlewares(app: FastAPI) -> None:
     configure_cors(app)
     configure_gzip(app)
     configure_limit_body_size(app)
+    configure_firebase_auth(app)
 
 
 def include_routers(app: FastAPI) -> None:
@@ -48,7 +54,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(user_router, prefix=API_PREFIX)
     app.include_router(cv_router, prefix=API_PREFIX)
     app.include_router(portfolio_router, prefix=API_PREFIX)
-    app.include_router(job_router)
+    app.include_router(job_router, prefix=API_PREFIX)
 
 
 def create_app() -> FastAPI:

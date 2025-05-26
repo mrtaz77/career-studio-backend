@@ -6,7 +6,7 @@ from colorlog import ColoredFormatter
 def setup_logging() -> None:
     """Configure logging using colorlog."""
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)  # default for all
+    root.setLevel(logging.INFO)
 
     # Clean up old handlers to prevent duplicates
     _clear_existing_handlers(root)

@@ -43,6 +43,9 @@ jobs:
           echo "PORT=${{ secrets.PORT }}" >> .env
           echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          mkdir secrets
+          cd secrets
+          echo ${{ secrets.FIREBASE_ADMIN_SDK }} | base64 --decode >> firebase-adminsdk.json
 
       - name: Run prisma generate
         run: poetry run prisma generate
