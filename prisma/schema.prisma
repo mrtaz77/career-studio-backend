@@ -17,8 +17,8 @@ model User {
   img        String?
   address    String?
   phone      String?
-  created_at DateTime 
-  updated_at DateTime 
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   cvs         CV[]
   portfolios  Portfolio[]
@@ -189,8 +189,8 @@ model CV {
   pdf_url                  String?
   preview_url              String?
   latest_saved_version_id  Int?
-  created_at               DateTime @db.Timestamp(6)
-  updated_at               DateTime @db.Timestamp(6)
+  created_at               DateTime @db.Timestamp(6) @default(now())
+  updated_at               DateTime @db.Timestamp(6) @updatedAt
 
   user            User          @relation(fields: [user_id], references: [uid])
   latest_version  CVVersion?    @relation(name: "LatestVersion", fields: [latest_saved_version_id], references: [id])
@@ -210,7 +210,7 @@ model CVVersion {
   version_number Int
   pdf_url        String
   preview_url    String
-  created_at     DateTime @db.Timestamp(6)
+  created_at     DateTime @db.Timestamp(6) @default(now())
 
   cv CV @relation(name: "AllVersions", fields: [cv_id], references: [id])
   referenced_by CV[] @relation(name: "LatestVersion")
@@ -223,8 +223,8 @@ model Portfolio {
   theme         String
   custom_domain String?
   seo_meta      Json?
-  created_at    DateTime 
-  updated_at    DateTime 
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
   user               User        @relation(fields: [user_id], references: [uid])
   feedbacks          PortfolioFeedback[]

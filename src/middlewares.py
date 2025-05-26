@@ -106,10 +106,6 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
             request.state.user = decoded_token
             request.state.uid = decoded_token.get("uid")
 
-            logger.debug(
-                f"User authenticated successfully: {decoded_token.get('email', 'unknown')}"
-            )
-
             # Process the request
             response = await call_next(request)
             return response
