@@ -1,40 +1,15 @@
-from typing import Annotated
+from logging import getLogger
 
-from fastapi import APIRouter, Depends, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Body, HTTPException, Request, status
 
-from src.users.constants import USER_EMAIL, USER_IMG
+from src.auth.exceptions import UserNotFoundError
+from src.users.exceptions import UsernameUnavailableException
+from src.users.schemas import UserProfile, UserProfileUpdate
+from src.users.service import get_user_profile_by_uid, update_user_profile
+
+logger = getLogger(__name__)
 
 router = APIRouter(tags=["User"], prefix="/users")
-security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
-
-
-# ====================
-# Schemas
-# ====================
-
-
-class UserProfile(BaseModel):
-    img: str
-    email: EmailStr
-    name: str
-
-    model_config = {
-        "json_schema_extra": {
-            "example": {"img": USER_IMG, "email": USER_EMAIL, "name": "John Doe"}
-        }
-    }
-
-
-class UserProfileUpdate(BaseModel):
-    name: str
-    img: str
-
-    model_config = {
-        "json_schema_extra": {"example": {"name": "Jane Doe", "img": USER_IMG}}
-    }
-
 
 # ====================
 # Routes
@@ -52,16 +27,29 @@ class UserProfileUpdate(BaseModel):
         401: {"description": "Invalid or missing token"},
     },
 )
-async def get_profile(
-    _creds: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-) -> UserProfile:
-    return UserProfile(img=USER_IMG, email=USER_EMAIL, name="Stub User")
+async def get_profile(request: Request) -> UserProfile:
+    try:
+        uid = request.state.user.get("uid", "")
+        user = await get_user_profile_by_uid(uid)
+        if user:
+            return UserProfile(
+                username=user.username,
+                full_name=user.full_name,
+                email=user.email,
+                img=user.img,
+                address=user.address,
+                phone=user.phone,
+                updated_at=user.updated_at,
+            )
+        raise HTTPException(status_code=404, detail="User not found")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
 @router.patch(
     "/me",
     summary="Update current user profile",
-    description="Updates the name and image of the currently authenticated user using the Firebase Bearer token.",
+    description="Updates the username, full_name, address, phone, or img of the currently authenticated user using the Firebase Bearer token. All fields are optional, but at least one must be provided. Username must be unique.",
     response_model=UserProfile,
     status_code=status.HTTP_200_OK,
     responses={
@@ -72,7 +60,17 @@ async def get_profile(
     },
 )
 async def update_profile(
-    _creds: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-    _data: UserProfileUpdate,
+    request: Request,
+    data: UserProfileUpdate = Body(...),
 ) -> UserProfile:
-    return UserProfile(img=_data.img, email=USER_EMAIL, name=_data.name)
+    try:
+        uid = request.state.user.get("uid", "")
+        updated_user = await update_user_profile(uid, data)
+        return updated_user
+    except UserNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except UsernameUnavailableException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating user profile: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
