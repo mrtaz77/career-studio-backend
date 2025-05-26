@@ -90,6 +90,7 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
                 "/api/v1/docs",
                 "/api/v1/redoc",
                 "/api/v1/openapi.json",
+                "/",
             ]:
                 return await call_next(request)
 
