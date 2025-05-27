@@ -90,8 +90,10 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
             if request.url.path in [
                 "/api/v1/docs",
                 "/api/v1/redoc",
+                "/api/v1/openapi.json",
                 "/openapi.json",
                 "/favicon.ico",
+                "/",
             ]:
                 return await call_next(request)
 
