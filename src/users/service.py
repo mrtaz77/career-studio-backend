@@ -94,7 +94,7 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
                 raise UsernameUnavailableException()
 
         # Only update provided fields
-        update_data = {k: v for k, v in update.dict().items() if v is not None}
+        update_data = update.model_dump(exclude_unset=True, exclude_none=True)
         if not update_data:
             return UserProfile(
                 username=user.username,

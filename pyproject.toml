@@ -24,6 +24,7 @@ pydantic-settings = "^2.9.1"
 ruff = "^0.11.9"
 uvicorn = "^0.34.2"
 firebase-admin = "^6.8.0"
+phonenumbers = "^9.0.5"
 
 [tool.black]
 line-length = 88
@@ -44,6 +45,26 @@ module = "src.prisma_client.*"
 ignore_errors = true
 follow_imports = "skip"
 
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
