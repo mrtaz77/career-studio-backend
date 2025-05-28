@@ -85,7 +85,6 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """Process the request and set user UID in request state if authenticated."""
         try:
-            logger.info(f"Processing request: {request.url.path}")
             # Skip authentication for certain paths
             if request.url.path in [
                 "/api/v1/docs",
