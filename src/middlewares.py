@@ -86,7 +86,7 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
         """Process the request and set user UID in request state if authenticated."""
         try:
             # Skip authentication for certain paths
-            if request.url.path in [
+            if request.method == "OPTIONS" or request.url.path in [
                 "/api/v1/docs",
                 "/api/v1/redoc",
                 "/api/v1/openapi.json",
