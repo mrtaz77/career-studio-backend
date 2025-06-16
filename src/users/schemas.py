@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+import phonenumbers
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class UserProfile(BaseModel):
@@ -24,3 +25,16 @@ class UserProfileUpdate(BaseModel):
     img: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        try:
+            parsed = phonenumbers.parse(v, None)
+            if not phonenumbers.is_valid_number(parsed):
+                raise ValueError("Invalid phone number format.")
+        except phonenumbers.NumberParseException:
+            raise ValueError("Invalid phone number.")
+        return v
