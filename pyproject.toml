@@ -27,6 +27,7 @@ firebase-admin = "^6.8.0"
 phonenumbers = "^9.0.7"
 fastapi-cache2 = "^0.2.2"
 redis = "^6.2.0"
+supabase = "^2.15.3"
 
 [tool.black]
 line-length = 88
@@ -47,6 +48,26 @@ module = "src.prisma_client.*"
 ignore_errors = true
 follow_imports = "skip"
 
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["firebase_admin", "firebase_admin.*"]
 follow_untyped_imports = false
