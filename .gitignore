@@ -3,6 +3,7 @@ node_modules/
 .scannerwork/
 prisma_client/
 secrets/
+files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

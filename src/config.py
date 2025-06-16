@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     HOST: str = Field(default="127.0.0.1")
     PORT: int = Field(default=8000)
     FRONTEND_URL: str = Field(default="your_frontend_url")
+    REDIS_PORT: int = Field(default=6379)
+    SUPABASE_PROJECT_URL: str = Field(default="your_supabase_project_url")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(default="your_supabase_service_role_key")
 
 
 settings = Settings()
