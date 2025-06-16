@@ -36,7 +36,7 @@ model Education {
   start_date   DateTime @db.Date
   end_date     DateTime @db.Date
   gpa          Float
-  honors       String
+  honors       String?
 
   user User @relation(fields: [user_id], references: [uid])
 }

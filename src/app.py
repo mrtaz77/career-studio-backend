@@ -6,6 +6,7 @@ from src.auth.router import router as auth_router
 from src.constants import API_PREFIX, VERSION, headers, methods, origins
 from src.cv.router import router as cv_router
 from src.database import lifespan
+from src.education.router import router as education_router
 from src.job.router import router as job_router
 from src.middlewares import FirebaseAuthMiddleware, LimitBodySizeMiddleware
 from src.opeanapi import inject_global_bearer_auth
@@ -55,6 +56,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(cv_router, prefix=API_PREFIX)
     app.include_router(portfolio_router, prefix=API_PREFIX)
     app.include_router(job_router, prefix=API_PREFIX)
+    app.include_router(education_router, prefix=API_PREFIX)
 
 
 def create_app() -> FastAPI:
