@@ -20,33 +20,25 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  cvs         CV[]
-  portfolios  Portfolio[]
-  feedbacks   PortfolioFeedback[] @relation("ReviewerFeedback")
+  cvs            CV[]
+  certifications Certification[]
+  educations     Education[]
+  portfolios     Portfolio[]
+  feedbacks      PortfolioFeedback[] @relation("ReviewerFeedback")
 }
 
 model Education {
   id           Int     @id @default(autoincrement())
+  user_id      String  @db.Text
   degree       String
   institution  String
   location     String
   start_date   DateTime @db.Date
   end_date     DateTime @db.Date
   gpa          Float
-  honors       String
+  honors       String?
 
-  cv_links     CV_Education[]
-  portfolio_links Portfolio_Education[]
-}
-
-model CV_Education {
-  cv_id        Int
-  education_id Int
-
-  cv       CV        @relation(fields: [cv_id], references: [id])
-  education Education @relation(fields: [education_id], references: [id])
-
-  @@id([cv_id, education_id])
+  user User @relation(fields: [user_id], references: [uid])
 }
 
 model Experience {
@@ -80,23 +72,13 @@ model CV_Experience {
 
 model Certification {
   id          Int     @id @default(autoincrement())
+  user_id     String  @db.Text
   title       String
   issuer      String
   issued_date DateTime @db.Date
   link        String
 
-  cv_links        CV_Certification[]
-  portfolio_links Portfolio_Certification[]
-}
-
-model CV_Certification {
-  cv_id            Int
-  certification_id Int
-
-  cv             CV             @relation(fields: [cv_id], references: [id])
-  certification  Certification  @relation(fields: [certification_id], references: [id])
-
-  @@id([cv_id, certification_id])
+  user            User @relation(fields: [user_id], references: [uid])
 }
 
 model Publication {
@@ -196,9 +178,7 @@ model CV {
   latest_version  CVVersion?    @relation(name: "LatestVersion", fields: [latest_saved_version_id], references: [id])
   versions        CVVersion[]   @relation(name: "AllVersions")
 
-  education        CV_Education[]
   experience       CV_Experience[]
-  certifications   CV_Certification[]
   publications     CV_Publication[]
   projects         CV_Project[]
   technical_skills CV_TechnicalSkill[]
@@ -228,9 +208,7 @@ model Portfolio {
 
   user               User        @relation(fields: [user_id], references: [uid])
   feedbacks          PortfolioFeedback[]
-  education          Portfolio_Education[]
   experience         Portfolio_Experience[]
-  certifications     Portfolio_Certification[]
   projects           Portfolio_Project[]
   technical_skills   Portfolio_TechnicalSkill[]
   research           Portfolio_Research[]
@@ -247,16 +225,6 @@ model PortfolioFeedback {
 
   portfolio     Portfolio @relation(fields: [portfolio_id], references: [id])
   reviewer      User?     @relation("ReviewerFeedback", fields: [reviewer_id], references: [uid])
-}
-
-model Portfolio_Education {
-  portfolio_id Int
-  edu_id       Int
-
-  portfolio Portfolio @relation(fields: [portfolio_id], references: [id])
-  education Education @relation(fields: [edu_id], references: [id])
-
-  @@id([portfolio_id, edu_id])
 }
 
 model Portfolio_Experience {
@@ -278,16 +246,6 @@ model Portfolio_Project {
   project   Project   @relation(fields: [project_id], references: [id])
 
   @@id([portfolio_id, project_id])
-}
-
-model Portfolio_Certification {
-  portfolio_id Int
-  cert_id      Int
-
-  portfolio     Portfolio     @relation(fields: [portfolio_id], references: [id])
-  certification Certification @relation(fields: [cert_id], references: [id])
-
-  @@id([portfolio_id, cert_id])
 }
 
 model Portfolio_TechnicalSkill {
