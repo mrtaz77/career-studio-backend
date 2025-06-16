@@ -1,8 +1,8 @@
 from datetime import date
 from typing import TypedDict
 
-from fastapi import UploadFile
 from pydantic import BaseModel
+from starlette.datastructures import UploadFile
 
 
 class CertificateOut(BaseModel):

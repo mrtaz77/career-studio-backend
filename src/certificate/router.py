@@ -1,8 +1,11 @@
-import logging
+from logging import getLogger
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import UploadFile as FastAPIUploadFile
+from fastapi import status
 from starlette.datastructures import FormData
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from src.certificate.constants import (
     CERTIFICATION_ADDITION_SUCCESS,
@@ -23,7 +26,7 @@ from src.certificate.service import (
 )
 
 router = APIRouter(tags=["Certificate"], prefix="/certificate")
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 @router.post(
@@ -64,10 +67,9 @@ def extract_certification_metadata(form: FormData) -> List[CertificateFormData]:
         if not all([raw_title, raw_issuer, raw_issued_date]):
             raise CertificateValidationException(CERTIFICATION_METADATA_MISSING)
 
-        if not isinstance(file, UploadFile):
+        if not isinstance(file, StarletteUploadFile):
             raise CertificateValidationException(CERTIFICATION_FILE_MISSING)
 
-        # Safe narrowing with cast
         title = str(raw_title)
         issuer = str(raw_issuer)
         issued_date = str(raw_issued_date)
@@ -115,7 +117,7 @@ async def update_certificate(
     title: Optional[str] = Form(None),
     issuer: Optional[str] = Form(None),
     issued_date: Optional[str] = Form(None),
-    file: Optional[UploadFile] = None,
+    file: Optional[FastAPIUploadFile] = None,
 ) -> CertificateOut:
     try:
         uid = request.state.user.get("uid", "")

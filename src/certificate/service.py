@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
+from logging import getLogger
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import UploadFile
+from starlette.datastructures import UploadFile
 from supabase import Client
 
 from src.certificate.exceptions import (
@@ -13,6 +14,8 @@ from src.certificate.exceptions import (
 from src.certificate.schemas import CertificateFormData, CertificateOut
 from src.database import get_db, get_supabase
 from src.prisma_client import Prisma
+
+logger = getLogger(__name__)
 
 STORAGE_BUCKET = "certificates"
 MAX_FILE_SIZE_MB = 5
@@ -60,6 +63,7 @@ async def get_certificate_or_404(db: Prisma, uid: str, cert_id: int) -> Certific
 
 def validate_file(filename: str, contents: bytes) -> None:
     ext = os.path.splitext(filename)[1].lower()
+    print(ext)
     if ext != ".pdf":
         raise CertificateUploadException("Only PDF files are supported.")
     file_size_mb = len(contents) / (1024 * 1024)
@@ -74,9 +78,6 @@ async def process_certificate_uploads(
         for cert in certs:
 
             cert_file = cert["file"]
-
-            if not isinstance(cert_file, UploadFile):
-                raise CertificateUploadException("Invalid file object.")
 
             path = await upload_file_to_supabase(supabase, uid, cert_file)
 
