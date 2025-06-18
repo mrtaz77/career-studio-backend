@@ -8,8 +8,13 @@ services:
     environment:
       - SUPABASE_DB_URL=${SUPABASE_DB_URL}
       - ENVIRONMENT=${ENVIRONMENT:-development}
-      - HOST=${HOST:-127.0.0.1}
+      - HOST=${HOST:-0.0.0.0}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/firebase-adminsdk.json
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_PROJECT_URL=${SUPABASE_PROJECT_URL}
+    volumes:
+      - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
     depends_on:
       - db
     networks:
