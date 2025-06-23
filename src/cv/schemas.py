@@ -1,93 +1,131 @@
-from typing import List, Literal, Optional
+from datetime import date, datetime
+from enum import Enum
+from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, HttpUrl
-
-# === Reusable Sub-sections ===
-
-
-class Link(BaseModel):
-    label: str
-    url: HttpUrl
+from pydantic import BaseModel
 
 
-class EducationEntry(BaseModel):
-    degree: str
-    institution: str
-    location: Optional[str]
-    start_year: int
-    end_year: Optional[int]
-    gpa: Optional[float]
-    honors: Optional[str]
+class SourceType(str, Enum):
+    project = "project"
+    publication = "publication"
 
 
-class ExperienceEntry(BaseModel):
+# === Experience ===
+
+
+class ExperienceIn(BaseModel):
+    id: Optional[int] = None
     job_title: str
+    position: str
     company: str
-    location: Optional[str]
-    start_date: str  # Format: "Jan 2020"
-    end_date: Optional[str]
-    responsibilities: List[str]
+    company_url: str
+    company_logo: str
+    location: str
+    employment_type: str
+    location_type: str
+    industry: str
+    start_date: date
+    end_date: date
+    description: str
 
 
-class ProjectEntry(BaseModel):
+# === Technical Skill ===
+
+
+class TechnicalSkillIn(BaseModel):
+    id: Optional[int] = None
+    name: str
+    category: str
+
+
+# === Project ===
+
+
+class ProjectTechnologyIn(BaseModel):
+    id: Optional[int] = None
+    technology: str
+
+
+class ResourceURLIn(BaseModel):
+    id: Optional[int] = None
+    label: str
+    url: str
+    source_type: SourceType
+
+
+class ProjectIn(BaseModel):
+    id: Optional[int] = None
     name: str
     description: str
-    technologies: List[str]
-    link: Optional[HttpUrl]
+    technologies: List[ProjectTechnologyIn]
+    urls: List[ResourceURLIn]
 
 
-class CertificationEntry(BaseModel):
+# === Publication ===
+
+
+class PublicationIn(BaseModel):
+    id: Optional[int] = None
     title: str
-    issuer: str
-    date: str
-
-
-class PublicationEntry(BaseModel):
-    title: str
-    authors: List[str]
     journal: str
     year: int
-    link: Optional[HttpUrl]
+    urls: List[ResourceURLIn]
 
 
-# === Main Request Schema ===
+# === Save Content ===
 
 
-class CVGenerationRequest(BaseModel):
-    full_name: str
-    email: EmailStr
-    phone: Optional[str]
-    address: Optional[str]
-    links: Optional[List[Link]]
-
-    summary: Optional[str]
-
-    education: List[EducationEntry]
-    experience: List[ExperienceEntry]
-    projects: Optional[List[ProjectEntry]]
-    skills: List[str]
-    certifications: Optional[List[CertificationEntry]]
-    publications: Optional[List[PublicationEntry]]
-
-    cv_type: Literal["academic", "industry"]
-    tone: Optional[Literal["formal", "concise", "creative"]]
+class CVSaveContent(BaseModel):
+    experiences: List[ExperienceIn]
+    publications: List[PublicationIn]
+    technical_skills: List[TechnicalSkillIn]
+    projects: List[ProjectIn]
 
 
-class CVUpdateRequest(BaseModel):
-    full_name: Optional[str]
-    email: Optional[EmailStr]
-    phone: Optional[str]
-    address: Optional[str]
-    links: Optional[List[Link]]
+# === Main Request Schemas ===
 
-    summary: Optional[str]
 
-    education: Optional[List[EducationEntry]]
-    experience: Optional[List[ExperienceEntry]]
-    projects: Optional[List[ProjectEntry]]
-    skills: Optional[List[str]]
-    certifications: Optional[List[CertificationEntry]]
-    publications: Optional[List[PublicationEntry]]
+class CVAutoSaveRequest(BaseModel):
+    cv_id: int
+    draft_data: CVSaveContent  # stored as JSON in Redis
 
-    cv_type: Optional[Literal["academic", "industry"]]
-    tone: Optional[Literal["formal", "concise", "creative"]]
+
+class CVSaveRequest(BaseModel):
+    cv_id: int
+    pdf_url: Optional[str] = None
+    content: CVSaveContent
+
+
+# === Output Schema ===
+
+
+class CVOut(BaseModel):
+    id: int
+    type: str
+    is_draft: bool
+    bookmark: bool
+    pdf_url: Optional[str] = None
+    latest_saved_version_id: Optional[int] = None
+    version_number: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CVCreateRequest(BaseModel):
+    type: str
+
+
+class CVFullOut(BaseModel):
+    id: int
+    type: str
+    is_draft: bool
+    bookmark: bool
+    pdf_url: Optional[str] = None
+    latest_saved_version_id: Optional[int] = None
+    version_number: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+    experiences: List[ExperienceIn]
+    publications: List[PublicationIn]
+    technical_skills: List[TechnicalSkillIn]
+    projects: List[ProjectIn]

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -9,9 +10,12 @@ from src.cv.router import router as cv_router
 from src.database import lifespan
 from src.education.router import router as education_router
 from src.job.router import router as job_router
-from src.middlewares import FirebaseAuthMiddleware, LimitBodySizeMiddleware
+from src.middlewares import (
+    FirebaseAuthMiddleware,
+    LimitBodySizeMiddleware,
+    validation_exception_handler,
+)
 from src.opeanapi import inject_global_bearer_auth
-from src.portfolio.router import router as portfolio_router
 from src.users.router import router as user_router
 
 
@@ -55,10 +59,13 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(auth_router, prefix=API_PREFIX)
     app.include_router(user_router, prefix=API_PREFIX)
     app.include_router(cv_router, prefix=API_PREFIX)
-    app.include_router(portfolio_router, prefix=API_PREFIX)
     app.include_router(job_router, prefix=API_PREFIX)
     app.include_router(education_router, prefix=API_PREFIX)
     app.include_router(certificate_router, prefix=API_PREFIX)
+
+
+def add_exception_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 
 def create_app() -> FastAPI:
@@ -78,4 +85,5 @@ def create_app() -> FastAPI:
     add_middlewares(app)
     include_routers(app)
     inject_global_bearer_auth(app)
+    add_exception_handlers(app)
     return app
