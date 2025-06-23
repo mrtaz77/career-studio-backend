@@ -1,8 +1,9 @@
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: backend
     ports:
       - "${PORT:-8000}:8000"
     environment:
@@ -13,15 +14,30 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/firebase-adminsdk.json
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - SUPABASE_PROJECT_URL=${SUPABASE_PROJECT_URL}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./secrets/firebase-adminsdk.json:/app/secrets/firebase-adminsdk.json:ro
     depends_on:
       - db
+      - redis
+    networks:
+      - app-network
+  
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      - REDIS_HOST=redis
+    restart: always
     networks:
       - app-network
 
   db:
     image: postgres:16-alpine
+    container_name: postgres
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
