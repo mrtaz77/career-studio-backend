@@ -1,0 +1,5 @@
+CV_AUTOSAVE_SUCCESS = "Draft saved temporarily (autosave)."
+CV_SAVE_SUCCESS = "CV saved successfully."
+CV_SAVE_FAILED = "Failed to save CV."
+CV_NOT_FOUND = "CV not found."
+CV_INVALID_TYPE = "CV type must be either 'academic' or 'industry'."

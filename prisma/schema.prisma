@@ -64,7 +64,7 @@ model CV_Experience {
   cv_id         Int
   experience_id Int
 
-  cv         CV         @relation(fields: [cv_id], references: [id])
+  cv         CV         @relation(fields: [cv_id], references: [id], onDelete: Cascade)
   experience Experience @relation(fields: [experience_id], references: [id])
 
   @@id([cv_id, experience_id])
@@ -86,18 +86,16 @@ model Publication {
   title    String
   journal  String
   year     Int
-  link     String
 
   cv_links        CV_Publication[]
   portfolio_links Portfolio_Research[]
-  urls            ResourceURL[]
 }
 
 model CV_Publication {
   cv_id          Int
   publication_id Int
 
-  cv           CV           @relation(fields: [cv_id], references: [id])
+  cv           CV           @relation(fields: [cv_id], references: [id], onDelete: Cascade)
   publication  Publication  @relation(fields: [publication_id], references: [id])
 
   @@id([cv_id, publication_id])
@@ -111,14 +109,13 @@ model Project {
   cv_links         CV_Project[]
   portfolio_links  Portfolio_Project[]
   technologies     ProjectTechnology[]
-  urls             ResourceURL[]
 }
 
 model CV_Project {
   cv_id      Int
   project_id Int
 
-  cv      CV      @relation(fields: [cv_id], references: [id])
+  cv      CV      @relation(fields: [cv_id], references: [id], onDelete: Cascade)
   project Project @relation(fields: [project_id], references: [id])
 
   @@id([cv_id, project_id])
@@ -133,14 +130,13 @@ model ProjectTechnology {
 }
 
 model ResourceURL {
-  id          Int     @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   source_id   Int
   source_type String
   label       String
   url         String
 
-  project     Project?     @relation(fields: [source_id], references: [id], map: "FKEY_PROJECT_ID_RESOURCEURL_SOURCE_ID")
-  publication Publication? @relation(fields: [source_id], references: [id], map: "FKEY_PUBLICATION_ID_RESOURCEURL_SOURCE_ID")
+  @@index([source_id, source_type])
 }
 
 model TechnicalSkill {
@@ -156,7 +152,7 @@ model CV_TechnicalSkill {
   cv_id        Int
   tech_skill_id Int
 
-  cv           CV             @relation(fields: [cv_id], references: [id])
+  cv           CV             @relation(fields: [cv_id], references: [id], onDelete: Cascade)
   technical_skill TechnicalSkill @relation(fields: [tech_skill_id], references: [id])
 
   @@id([cv_id, tech_skill_id])
@@ -169,7 +165,6 @@ model CV {
   bookmark                 Boolean  @default(false)
   is_draft                 Boolean  @default(true)
   pdf_url                  String?
-  preview_url              String?
   latest_saved_version_id  Int?
   created_at               DateTime @db.Timestamp(6) @default(now())
   updated_at               DateTime @db.Timestamp(6) @updatedAt
@@ -188,11 +183,13 @@ model CVVersion {
   id             Int     @id @default(autoincrement())
   cv_id          Int
   version_number Int
+  parent_version_id Int? @db.Integer
   pdf_url        String
-  preview_url    String
   created_at     DateTime @db.Timestamp(6) @default(now())
 
-  cv CV @relation(name: "AllVersions", fields: [cv_id], references: [id])
+  cv CV @relation(name: "AllVersions", fields: [cv_id], references: [id], onDelete: Cascade)
+  parent_version    CVVersion? @relation("VersionParent", fields: [parent_version_id], references: [id])
+  child_versions   CVVersion[] @relation("VersionParent")
   referenced_by CV[] @relation(name: "LatestVersion")
 }
 

@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-from src.cv.schemas import CVGenerationRequest
 from src.portfolio.schemas import (
     Achievement,
     Experience,
@@ -101,34 +100,6 @@ async def create_portfolio_from_cv(
     )
 
 
-@router.post(
-    "/from-user",
-    summary="Create portfolio from user input",
-    description="Creates a portfolio using CV generation input fields.",
-    response_model=PortfolioResponse,
-)
-async def create_portfolio_from_user(
-    data: CVGenerationRequest, _creds: HTTPAuthorizationCredentials = Depends(security)
-) -> PortfolioResponse:
-    details = [
-        f"Email: {data.email}",
-        f"Phone: {data.phone}" if data.phone else None,
-        f"Address: {data.address}" if data.address else None,
-    ]
-    contact_info = " | ".join(filter(None, details))
-    return PortfolioResponse(
-        id=102,
-        slug="userport456",
-        cv_id=None,
-        title=data.full_name,
-        summary=f"{data.summary or ''} ({contact_info})",
-        description="Generated from user CV input",
-        theme="minimal",
-        published=False,
-        last_saved_at=datetime.now(timezone.utc),
-    )
-
-
 @router.get(
     "/{slug}",
     summary="View a public portfolio",
@@ -215,30 +186,6 @@ async def autosave_portfolio(
         description=data.description or "Updated description",
         theme=data.theme or "classic",
         published=data.published if data.published is not None else False,
-        last_saved_at=datetime.now(timezone.utc),
-    )
-
-
-@router.put(
-    "/{portfolio_id}/save",
-    summary="Manually save full portfolio content",
-    description="Fully updates portfolio content when user clicks 'Save'.",
-    response_model=PortfolioResponse,
-)
-async def manual_save_portfolio(
-    portfolio_id: int,
-    data: CVGenerationRequest,
-    _creds: HTTPAuthorizationCredentials = Depends(security),
-) -> PortfolioResponse:
-    return PortfolioResponse(
-        id=portfolio_id,
-        slug=f"portfolio-{portfolio_id}",
-        cv_id=None,
-        title=data.full_name,
-        summary=data.summary,
-        description="Manually saved from full form",
-        theme="minimal",
-        published=False,
         last_saved_at=datetime.now(timezone.utc),
     )
 
