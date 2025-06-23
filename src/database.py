@@ -55,7 +55,7 @@ async def init_redis_cache() -> None:
     Initialize Redis cache for FastAPI.
     """
     redis_client = redis.Redis(
-        host=settings.HOST, port=settings.REDIS_PORT, decode_responses=True
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True
     )
     FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
 

@@ -2,6 +2,9 @@ from logging import getLogger
 from typing import Awaitable, Callable
 
 from fastapi import HTTPException, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -119,3 +122,9 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error(f"{TOKEN_VERIFICATION_ERROR}: {str(e)}")
             raise HTTPException(status_code=401, detail=TOKEN_VERIFICATION_ERROR)
+
+
+async def validation_exception_handler(request: Request, exc: Exception) -> Response:
+    if isinstance(exc, RequestValidationError):
+        return await request_validation_exception_handler(request, exc)
+    return JSONResponse(status_code=400, content={"detail": "Invalid request."})
