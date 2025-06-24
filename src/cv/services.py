@@ -7,6 +7,8 @@ from uuid import uuid4
 import redis.asyncio as aioredis
 from supabase import Client
 
+from src.certificate.schemas import CertificateOut
+from src.certificate.service import STORAGE_BUCKET as CERTIFICATE_STORAGE_BUCKET
 from src.certificate.service import generate_signed_url
 from src.config import settings
 from src.cv.exceptions import (
@@ -66,6 +68,7 @@ async def save_cv_version(uid: str, payload: CVSaveRequest) -> CVOut:
         await clear_existing_links(db, payload.cv_id)
         await process_content(db, payload.cv_id, payload.content)
         await redis_client.delete(f"{REDIS_AUTOSAVE_PREFIX}{payload.cv_id}")
+
         return build_cv_out(updated_cv, version.version_number)
 
 
@@ -397,11 +400,13 @@ async def upload_pdf_bytes_to_supabase(
     return filename
 
 
-async def process_cv_generation(uid: str, payload: CVAutoSaveRequest) -> str:
+async def process_cv_generation(
+    uid: str, payload: CVAutoSaveRequest, force_regenerate: bool = True
+) -> str:
     async with get_db() as db, get_supabase() as supabase:
         cv = await validate_cv_ownership(db, uid, payload.cv_id)
 
-        if cv.pdf_url:
+        if not force_regenerate and cv.pdf_url:
             return generate_signed_url(supabase, cv.pdf_url, STORAGE_BUCKET)
 
         user = await db.user.find_unique(where={"uid": uid})
@@ -414,8 +419,85 @@ async def process_cv_generation(uid: str, payload: CVAutoSaveRequest) -> str:
         user_out = UserProfile(**user.__dict__)
         educations_out = [EducationOut(**e.__dict__) for e in educations]
         experiences_out = [ExperienceIn(**e.__dict__) for e in experiences]
+        projects = await db.cv_project.find_many(
+            where={"cv_id": payload.cv_id}, include={"project": True}
+        )
+        projects_out = [
+            ProjectIn(
+                id=p.project.id,
+                name=p.project.name,
+                description=p.project.description,
+                technologies=[
+                    ProjectTechnologyIn(id=t.id, technology=t.technology)
+                    for t in await db.projecttechnology.find_many(
+                        where={"project_id": p.project.id}
+                    )
+                ],
+                urls=[
+                    ResourceURLIn(
+                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
+                    )
+                    for u in await db.resourceurl.find_many(
+                        where={"source_id": p.project.id, "source_type": "project"}
+                    )
+                ],
+            )
+            for p in projects
+        ]
+        technical_skills = await db.cv_technicalskill.find_many(
+            where={"cv_id": payload.cv_id}, include={"technical_skill": True}
+        )
+        technical_skills_out = [
+            TechnicalSkillIn(**ts.technical_skill.__dict__) for ts in technical_skills
+        ]
+        publications = await db.cv_publication.find_many(
+            where={"cv_id": payload.cv_id}, include={"publication": True}
+        )
+        publications_out = [
+            PublicationIn(
+                id=p.publication.id,
+                title=p.publication.title,
+                journal=p.publication.journal,
+                year=p.publication.year,
+                urls=[
+                    ResourceURLIn(
+                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
+                    )
+                    for u in await db.resourceurl.find_many(
+                        where={
+                            "source_id": p.publication.id,
+                            "source_type": "publication",
+                        }
+                    )
+                ],
+            )
+            for p in publications
+        ]
+        certificates = await db.certification.find_many(where={"user_id": uid})
+        certificates_out = [
+            CertificateOut(
+                id=c.id,
+                title=c.title,
+                issuer=c.issuer,
+                issued_date=c.issued_date,
+                link=generate_signed_url(
+                    supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
+                ),
+            )
+            for c in certificates
+        ]
 
-        latex_code = render_resume_latex(user_out, educations_out, experiences_out, 1)
+        latex_code = render_resume_latex(
+            user_out,
+            educations_out,
+            experiences_out,
+            projects_out,
+            technical_skills_out,
+            publications_out,
+            certificates_out,
+            1,
+        )
+        logger.info("Latex Code:\n%s", latex_code)
         pdf_bytes = compile_latex_remotely(latex_code, 1)
 
         path = await upload_pdf_bytes_to_supabase(

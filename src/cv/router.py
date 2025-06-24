@@ -13,6 +13,7 @@ from src.cv.schemas import (
     CVAutoSaveRequest,
     CVCreateRequest,
     CVFullOut,
+    CVGenerateRequest,
     CVOut,
     CVSaveRequest,
 )
@@ -102,11 +103,13 @@ async def get_cv_endpoint(request: Request, cv_id: int) -> CVFullOut:
     status_code=status.HTTP_200_OK,
 )
 async def generate_cv_endpoint(
-    request: Request, payload: CVAutoSaveRequest
+    request: Request, payload: CVGenerateRequest
 ) -> dict[str, str]:
     try:
         uid = request.state.user.get("uid", "")
-        signed_url = await process_cv_generation(uid, payload)
+        signed_url = await process_cv_generation(
+            uid, payload, payload.force_regenerate or True
+        )
         return {"pdf_url": signed_url}
     except CVNotFoundException as e:
         raise HTTPException(status_code=404, detail=e.message)

@@ -3,7 +3,8 @@ import os
 import requests
 from jinja2 import Environment, FileSystemLoader
 
-from src.cv.schemas import ExperienceIn
+from src.certificate.schemas import CertificateOut
+from src.cv.schemas import ExperienceIn, ProjectIn, PublicationIn, TechnicalSkillIn
 from src.education.schemas import EducationOut
 from src.users.schemas import UserProfile
 
@@ -16,6 +17,10 @@ def render_resume_latex(
     user: UserProfile,
     educations: list[EducationOut],
     experiences: list[ExperienceIn],
+    projects: list[ProjectIn],
+    technical_skills: list[TechnicalSkillIn],
+    publications: list[PublicationIn],
+    certificates: list[CertificateOut],
     template: int,
 ) -> str:
     env = Environment(
@@ -29,7 +34,15 @@ def render_resume_latex(
         autoescape=False,
     )
     tpl = env.get_template(TEMPLATE_FILE)
-    return tpl.render(user=user, educations=educations, experiences=experiences)
+    return tpl.render(
+        user=user,
+        educations=educations,
+        experiences=experiences,
+        projects=projects,
+        technical_skills=technical_skills,
+        publications=publications,
+        certificates=certificates,
+    )
 
 
 def compile_latex_remotely(latex_code: str, template: int) -> bytes:
