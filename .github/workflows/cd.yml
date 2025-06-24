@@ -27,9 +27,8 @@ jobs:
 
       # 2) ACR login
       - name: Login to ACR
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
 
       # 3) Build & push Docker image
       - name: Build & push image
