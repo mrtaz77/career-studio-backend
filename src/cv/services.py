@@ -2,15 +2,19 @@ import json
 from datetime import datetime, timezone
 from logging import getLogger
 from typing import List
+from uuid import uuid4
 
 import redis.asyncio as aioredis
+from supabase import Client
 
+from src.certificate.service import generate_signed_url
 from src.config import settings
 from src.cv.exceptions import (
     CVInvalidTypeException,
     CVNotFoundException,
     CVSaveException,
 )
+from src.cv.generator import compile_latex_remotely, render_resume_latex
 from src.cv.schemas import (
     CVAutoSaveRequest,
     CVFullOut,
@@ -24,12 +28,15 @@ from src.cv.schemas import (
     ResourceURLIn,
     TechnicalSkillIn,
 )
-from src.database import get_db
+from src.database import get_db, get_supabase
+from src.education.schemas import EducationOut
 from src.prisma_client import Prisma, models
+from src.users.schemas import UserProfile
 from src.util import serialize_for_json, to_datetime
 
 logger = getLogger(__name__)
 REDIS_AUTOSAVE_PREFIX = "autosave:cv:"
+STORAGE_BUCKET = "cvs"
 
 redis_client = aioredis.from_url(
     f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}", decode_responses=True
@@ -239,125 +246,181 @@ async def get_cv_details(uid: str, cv_id: int) -> CVFullOut:
     redis_key = f"{REDIS_AUTOSAVE_PREFIX}{cv_id}"
     cached = await redis_client.get(redis_key)
     if cached:
-        parsed = json.loads(cached)
-        draft = parsed["draft_data"]
-        return CVFullOut(
-            id=cv_id,
-            type=draft.get("type", ""),
-            is_draft=True,
-            bookmark=draft.get("bookmark", False),
-            pdf_url=draft.get("pdf_url"),
-            latest_saved_version_id=draft.get("latest_saved_version_id"),
-            version_number=draft.get("version_number"),
-            created_at=draft.get("created_at", datetime.now(timezone.utc)),
-            updated_at=draft.get("updated_at", datetime.now(timezone.utc)),
-            experiences=[ExperienceIn(**exp) for exp in draft.get("experiences", [])],
-            publications=[
-                PublicationIn(**pub) for pub in draft.get("publications", [])
-            ],
-            technical_skills=[
-                TechnicalSkillIn(**s) for s in draft.get("technical_skills", [])
-            ],
-            projects=[
-                ProjectIn(
-                    id=proj.get("id"),
-                    name=proj["name"],
-                    description=proj["description"],
-                    technologies=[
-                        models.ProjectTechnology(**tech)
-                        for tech in proj.get("technologies", [])
-                    ],
-                    urls=[ResourceURLIn(**url) for url in proj.get("urls", [])],
-                )
-                for proj in draft.get("projects", [])
-            ],
-        )
+        return _build_cv_from_cache(cv_id, cached)
 
     async with get_db() as db:
         cv = await db.cv.find_unique(where={"id": cv_id})
         if not cv or cv.user_id != uid:
             raise CVNotFoundException()
+        return await _build_cv_from_db(db, cv)
 
+
+def _build_cv_from_cache(cv_id: int, cached: str) -> CVFullOut:
+    parsed = json.loads(cached)
+    draft = parsed["draft_data"]
+    return CVFullOut(
+        id=cv_id,
+        type=draft.get("type", ""),
+        is_draft=True,
+        bookmark=draft.get("bookmark", False),
+        pdf_url=draft.get("pdf_url"),
+        latest_saved_version_id=draft.get("latest_saved_version_id"),
+        version_number=draft.get("version_number"),
+        created_at=draft.get("created_at", datetime.now(timezone.utc)),
+        updated_at=draft.get("updated_at", datetime.now(timezone.utc)),
+        experiences=[ExperienceIn(**exp) for exp in draft.get("experiences", [])],
+        publications=[PublicationIn(**pub) for pub in draft.get("publications", [])],
+        technical_skills=[
+            TechnicalSkillIn(**s) for s in draft.get("technical_skills", [])
+        ],
+        projects=[
+            ProjectIn(
+                id=proj.get("id"),
+                name=proj["name"],
+                description=proj["description"],
+                technologies=[
+                    models.ProjectTechnology(**tech)
+                    for tech in proj.get("technologies", [])
+                ],
+                urls=[ResourceURLIn(**url) for url in proj.get("urls", [])],
+            )
+            for proj in draft.get("projects", [])
+        ],
+    )
+
+
+async def _build_cv_from_db(db: Prisma, cv: models.CV) -> CVFullOut:
+    exp_links, pub_links, skill_links, proj_links, latest_version = (
+        await _fetch_cv_related_entities(db, cv)
+    )
+    version_number = latest_version.version_number if latest_version else None
+
+    experiences = [ExperienceIn(**link.experience.__dict__) for link in exp_links]
+    publications = []
+    for link in pub_links:
+        p = link.publication
+        urls = await db.resourceurl.find_many(
+            where={"source_id": p.id, "source_type": "publication"}
+        )
+        publications.append(
+            PublicationIn(
+                id=p.id,
+                title=p.title,
+                journal=p.journal,
+                year=p.year,
+                urls=[
+                    ResourceURLIn(
+                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
+                    )
+                    for u in urls
+                ],
+            )
+        )
+
+    technical_skills = [
+        TechnicalSkillIn(**link.technical_skill.__dict__) for link in skill_links
+    ]
+
+    projects = []
+    for link in proj_links:
+        p = link.project
+        techs = await db.projecttechnology.find_many(where={"project_id": p.id})
+        urls = await db.resourceurl.find_many(
+            where={"source_id": p.id, "source_type": "project"}
+        )
+        projects.append(
+            ProjectIn(
+                id=p.id,
+                name=p.name,
+                description=p.description,
+                technologies=[
+                    ProjectTechnologyIn(id=t.id, technology=t.technology) for t in techs
+                ],
+                urls=[
+                    ResourceURLIn(
+                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
+                    )
+                    for u in urls
+                ],
+            )
+        )
+
+    return CVFullOut(
+        id=cv.id,
+        type=cv.type,
+        is_draft=cv.is_draft,
+        bookmark=cv.bookmark,
+        pdf_url=cv.pdf_url,
+        latest_saved_version_id=cv.latest_saved_version_id,
+        version_number=version_number,
+        created_at=cv.created_at,
+        updated_at=cv.updated_at,
+        experiences=experiences,
+        publications=publications,
+        technical_skills=technical_skills,
+        projects=projects,
+    )
+
+
+async def _fetch_cv_related_entities(db: Prisma, cv: models.CV) -> tuple[
+    List[models.CV_Experience],
+    List[models.CV_Publication],
+    List[models.CV_TechnicalSkill],
+    List[models.CV_Project],
+    models.CVVersion | None,
+]:
+    exp_links = await db.cv_experience.find_many(
+        where={"cv_id": cv.id}, include={"experience": True}
+    )
+    pub_links = await db.cv_publication.find_many(
+        where={"cv_id": cv.id}, include={"publication": True}
+    )
+    skill_links = await db.cv_technicalskill.find_many(
+        where={"cv_id": cv.id}, include={"technical_skill": True}
+    )
+    proj_links = await db.cv_project.find_many(
+        where={"cv_id": cv.id}, include={"project": True}
+    )
+    latest_version = await db.cvversion.find_unique(
+        where={"id": cv.latest_saved_version_id}
+    )
+    return exp_links, pub_links, skill_links, proj_links, latest_version
+
+
+async def upload_pdf_bytes_to_supabase(
+    supabase: Client, uid: str, content: bytes, bucket: str
+) -> str:
+    filename = f"{uid}/{uuid4()}.pdf"
+    supabase.storage.from_(bucket).upload(
+        filename, content, {"content-type": "application/pdf"}
+    )
+    return filename
+
+
+async def process_cv_generation(uid: str, payload: CVAutoSaveRequest) -> str:
+    async with get_db() as db, get_supabase() as supabase:
+        cv = await validate_cv_ownership(db, uid, payload.cv_id)
+
+        if cv.pdf_url:
+            return generate_signed_url(supabase, cv.pdf_url, STORAGE_BUCKET)
+
+        user = await db.user.find_unique(where={"uid": uid})
+        educations = await db.education.find_many(where={"user_id": uid})
         exp_links = await db.cv_experience.find_many(
-            where={"cv_id": cv_id}, include={"experience": True}
+            where={"cv_id": payload.cv_id}, include={"experience": True}
         )
-        pub_links = await db.cv_publication.find_many(
-            where={"cv_id": cv_id}, include={"publication": True}
-        )
-        skill_links = await db.cv_technicalskill.find_many(
-            where={"cv_id": cv_id}, include={"technical_skill": True}
-        )
-        proj_links = await db.cv_project.find_many(
-            where={"cv_id": cv_id}, include={"project": True}
-        )
-        latest_version = await db.cvversion.find_unique(
-            where={"id": cv.latest_saved_version_id}
-        )
-        version_number = latest_version.version_number if latest_version else None
+        experiences = [link.experience for link in exp_links]
 
-        experiences = [ExperienceIn(**link.experience.__dict__) for link in exp_links]
-        publications = []
-        for link in pub_links:
-            p = link.publication
-            urls = await db.resourceurl.find_many(
-                where={"source_id": p.id, "source_type": "publication"}
-            )
-            publications.append(
-                PublicationIn(
-                    id=p.id,
-                    title=p.title,
-                    journal=p.journal,
-                    year=p.year,
-                    urls=[
-                        ResourceURLIn(
-                            id=u.id, label=u.label, url=u.url, source_type=u.source_type
-                        )
-                        for u in urls
-                    ],
-                )
-            )
+        user_out = UserProfile(**user.__dict__)
+        educations_out = [EducationOut(**e.__dict__) for e in educations]
+        experiences_out = [ExperienceIn(**e.__dict__) for e in experiences]
 
-        technical_skills = [
-            TechnicalSkillIn(**link.technical_skill.__dict__) for link in skill_links
-        ]
+        latex_code = render_resume_latex(user_out, educations_out, experiences_out, 1)
+        pdf_bytes = compile_latex_remotely(latex_code, 1)
 
-        projects = []
-        for link in proj_links:
-            p = link.project
-            techs = await db.projecttechnology.find_many(where={"project_id": p.id})
-            urls = await db.resourceurl.find_many(
-                where={"source_id": p.id, "source_type": "project"}
-            )
-            projects.append(
-                ProjectIn(
-                    id=p.id,
-                    name=p.name,
-                    description=p.description,
-                    technologies=[
-                        ProjectTechnologyIn(id=t.id, technology=t.technology)
-                        for t in techs
-                    ],
-                    urls=[
-                        ResourceURLIn(
-                            id=u.id, label=u.label, url=u.url, source_type=u.source_type
-                        )
-                        for u in urls
-                    ],
-                )
-            )
-
-        return CVFullOut(
-            id=cv.id,
-            type=cv.type,
-            is_draft=cv.is_draft,
-            bookmark=cv.bookmark,
-            pdf_url=cv.pdf_url,
-            latest_saved_version_id=cv.latest_saved_version_id,
-            version_number=version_number,
-            created_at=cv.created_at,
-            updated_at=cv.updated_at,
-            experiences=experiences,
-            publications=publications,
-            technical_skills=technical_skills,
-            projects=projects,
+        path = await upload_pdf_bytes_to_supabase(
+            supabase, uid, pdf_bytes, STORAGE_BUCKET
         )
+        await db.cv.update(where={"id": payload.cv_id}, data={"pdf_url": path})
+
+        return generate_signed_url(supabase, path, STORAGE_BUCKET)

@@ -16,7 +16,13 @@ from src.cv.schemas import (
     CVOut,
     CVSaveRequest,
 )
-from src.cv.services import autosave_cv, create_new_cv, get_cv_details, save_cv_version
+from src.cv.services import (
+    autosave_cv,
+    create_new_cv,
+    get_cv_details,
+    process_cv_generation,
+    save_cv_version,
+)
 
 router = APIRouter(tags=["CV"], prefix="/cv")
 logger = getLogger(__name__)
@@ -88,3 +94,22 @@ async def get_cv_endpoint(request: Request, cv_id: int) -> CVFullOut:
     except Exception:
         logger.exception("Failed to retrieve CV details")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post(
+    "/generate",
+    summary="Generate or retrieve LaTeX-based CV PDF",
+    status_code=status.HTTP_200_OK,
+)
+async def generate_cv_endpoint(
+    request: Request, payload: CVAutoSaveRequest
+) -> dict[str, str]:
+    try:
+        uid = request.state.user.get("uid", "")
+        signed_url = await process_cv_generation(uid, payload)
+        return {"pdf_url": signed_url}
+    except CVNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except Exception:
+        logger.exception("Failed to generate CV file")
+        raise HTTPException(status_code=500, detail="Failed to generate CV PDF")

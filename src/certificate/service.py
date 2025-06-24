@@ -21,8 +21,10 @@ STORAGE_BUCKET = "certificates"
 MAX_FILE_SIZE_MB = 5
 
 
-def generate_signed_url(supabase: Client, path: str, expires: int = 3600) -> str:
-    result = supabase.storage.from_(STORAGE_BUCKET).create_signed_url(
+def generate_signed_url(
+    supabase: Client, path: str, storage_bucket: str, expires: int = 3600
+) -> str:
+    result = supabase.storage.from_(storage_bucket).create_signed_url(
         path, expires_in=expires
     )
     signed_url = result.get("signedURL") or ""
@@ -31,7 +33,9 @@ def generate_signed_url(supabase: Client, path: str, expires: int = 3600) -> str
     return signed_url
 
 
-async def upload_file_to_supabase(supabase: Client, uid: str, file: UploadFile) -> str:
+async def upload_file_to_supabase(
+    supabase: Client, uid: str, file: UploadFile, storage_bucket: str
+) -> str:
     filename = file.filename or ""
     contents = await file.read()
     validate_file(filename, contents)
@@ -39,7 +43,7 @@ async def upload_file_to_supabase(supabase: Client, uid: str, file: UploadFile) 
     unique_filename = f"{uid}/{uuid4()}{ext}"
 
     try:
-        supabase.storage.from_(STORAGE_BUCKET).upload(
+        supabase.storage.from_(storage_bucket).upload(
             unique_filename, contents, {"content-type": "application/pdf"}
         )
     except Exception:
@@ -79,7 +83,9 @@ async def process_certificate_uploads(
 
             cert_file = cert["file"]
 
-            path = await upload_file_to_supabase(supabase, uid, cert_file)
+            path = await upload_file_to_supabase(
+                supabase, uid, cert_file, STORAGE_BUCKET
+            )
 
             await db.certification.create(
                 data={
@@ -101,7 +107,7 @@ async def get_user_certificates(uid: str) -> List[CertificateOut]:
                 title=cert.title,
                 issuer=cert.issuer,
                 issued_date=cert.issued_date,
-                link=generate_signed_url(supabase, cert.link),
+                link=generate_signed_url(supabase, cert.link, STORAGE_BUCKET),
             )
             for cert in certs
         ]
@@ -133,7 +139,9 @@ async def update_user_certificate(
                 )
 
         if file:
-            update_data["link"] = await upload_file_to_supabase(supabase, uid, file)
+            update_data["link"] = await upload_file_to_supabase(
+                supabase, uid, file, STORAGE_BUCKET
+            )
 
         updated = await db.certification.update(where={"id": cert_id}, data=update_data)
 
@@ -142,7 +150,7 @@ async def update_user_certificate(
             title=updated.title,
             issuer=updated.issuer,
             issued_date=updated.issued_date,
-            link=generate_signed_url(supabase, updated.link),
+            link=generate_signed_url(supabase, updated.link, STORAGE_BUCKET),
         )
 
 
