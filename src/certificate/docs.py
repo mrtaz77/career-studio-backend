@@ -1,6 +1,6 @@
 certification_tags_metadata = [
     {
-        "name": "Certification",
+        "name": "Certificate",
         "description": "Endpoints the current user's certifications.",
     }
 ]

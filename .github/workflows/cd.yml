@@ -1,0 +1,73 @@
+name: Backend CD
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  id-token: write   # allows azure/login to use OIDC
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1) Azure login using OIDC
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          client-id:     ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:     ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 2) ACR login
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+
+      # 3) Build & push Docker image
+      - name: Build & push image
+        run: |
+          IMAGE=${{ secrets.ACR_LOGIN_SERVER }}/backend:${{ github.sha }}
+          docker build -t $IMAGE .
+          docker push $IMAGE
+      
+      # 4) SSH & deploy
+      - name: SSH & update deployment
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host:    ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key:     ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd backend
+            git fetch && git reset --hard origin/main
+
+            cat >.env <<EOF
+            ENVIRONMENT=production
+            PORT=${{ secrets.PORT }}
+            HOST=${{ secrets.HOST }}
+            SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            REDIS_HOST=${{ secrets.REDIS_HOST }}
+            REDIS_PORT=${{ secrets.REDIS_PORT }}
+            EOF
+            chmod 600 .env
+
+            mkdir secrets
+            cd secrets
+            echo ${{ secrets.FIREBASE_ADMIN_SDK }} | base64 --decode >> firebase-adminsdk.json
+
+            cd ..
+            docker compose pull backend
+            docker compose up -d backend
