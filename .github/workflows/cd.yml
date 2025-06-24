@@ -45,8 +45,18 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key:     ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd backend
-            git fetch && git reset --hard origin/main
+            if [ ! -d "backend" ]; then
+              mkdir backend
+              cd backend
+              git init
+              git remote add origin https://github.com/mrtaz77/career-studio-backend.git
+            else
+              cd backend
+            fi
+
+            # Pull the latest changes from the repository
+            git fetch origin
+            git reset --hard origin/main
 
             cat >.env <<EOF
             ENVIRONMENT=production
@@ -63,10 +73,16 @@ jobs:
             EOF
             chmod 600 .env
 
-            mkdir secrets
-            cd secrets
-            echo ${{ secrets.FIREBASE_ADMIN_SDK }} | base64 --decode > firebase-adminsdk.json
+            # Ensure secrets directory exists and populate it with secret files
+            if [ -d "secrets" ]; then
+              rm -rf secrets/*
+            else
+              mkdir -p secrets
+            fi
+            echo ${{ secrets.FIREBASE_ADMIN_SDK }} | base64 --decode > secrets/firebase_admin_sdk.json
 
-            cd ..
             docker compose pull backend
             docker compose up -d backend
+
+            # Prune unused images
+            docker image prune -f
