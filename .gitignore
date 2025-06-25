@@ -4,6 +4,7 @@ node_modules/
 prisma_client/
 secrets/
 files/
+setup_data.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
