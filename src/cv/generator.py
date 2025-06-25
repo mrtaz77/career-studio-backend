@@ -31,7 +31,7 @@ def render_resume_latex(
         variable_end_string=")))",
         comment_start_string="((#",
         comment_end_string="#))",
-        autoescape=False,
+        autoescape=True,
     )
     tpl = env.get_template(TEMPLATE_FILE)
     return tpl.render(
