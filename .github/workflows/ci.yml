@@ -65,7 +65,7 @@ jobs:
 
       - name: MyPy type-check
         run: |
-          poetry run mypy --install-types
+          python3 -m pip install types-requests
           poetry run mypy src
 
       - name: Pytest with coverage
