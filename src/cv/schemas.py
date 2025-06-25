@@ -129,3 +129,7 @@ class CVFullOut(BaseModel):
     publications: List[PublicationIn]
     technical_skills: List[TechnicalSkillIn]
     projects: List[ProjectIn]
+
+
+class CVGenerateRequest(CVAutoSaveRequest):
+    force_regenerate: Optional[bool] = False

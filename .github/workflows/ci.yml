@@ -64,7 +64,9 @@ jobs:
         run: poetry run ruff check .
 
       - name: MyPy type-check
-        run: poetry run mypy src
+        run: |
+          poetry add --dev types-requests
+          poetry run mypy src
 
       - name: Pytest with coverage
         run: |
