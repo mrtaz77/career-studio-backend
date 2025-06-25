@@ -49,6 +49,7 @@ jobs:
           echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
           echo "USER_1_EMAIL=${{ secrets.USER_1_EMAIL }}" >> .env
           echo "USER_1_PASSWORD=${{ secrets.USER_1_PASSWORD }}" >> .env
+          echo "FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}" >> .env
           mkdir secrets
           cd secrets
           echo ${{ secrets.FIREBASE_ADMIN_SDK }} | base64 --decode >> firebase-adminsdk.json
