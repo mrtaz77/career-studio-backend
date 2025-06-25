@@ -497,7 +497,6 @@ async def process_cv_generation(
             certificates_out,
             1,
         )
-        logger.info("Latex Code:\n%s", latex_code)
         pdf_bytes = compile_latex_remotely(latex_code, 1)
 
         path = await upload_pdf_bytes_to_supabase(
