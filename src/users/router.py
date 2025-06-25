@@ -70,7 +70,7 @@ async def update_profile(
     except UserNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except UsernameUnavailableException as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating user profile: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
