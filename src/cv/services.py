@@ -20,6 +20,7 @@ from src.cv.generator import compile_latex_remotely, render_resume_latex
 from src.cv.schemas import (
     CVAutoSaveRequest,
     CVFullOut,
+    CVListOut,
     CVOut,
     CVSaveContent,
     CVSaveRequest,
@@ -505,3 +506,23 @@ async def process_cv_generation(
         await db.cv.update(where={"id": payload.cv_id}, data={"pdf_url": path})
 
         return generate_signed_url(supabase, path, STORAGE_BUCKET)
+
+
+async def list_of_cvs(uid: str) -> list[CVListOut]:
+    async with get_db() as db:
+        cvs = await db.cv.find_many(
+            where={"user_id": uid}, include={"latest_version": True}
+        )
+
+        return [
+            CVListOut(
+                cv_id=cv.id,
+                latest_saved_version_id=cv.latest_saved_version_id,
+                version_number=(
+                    cv.latest_version.version_number if cv.latest_version else 0
+                ),
+                created_at=cv.created_at,
+                updated_at=cv.updated_at,
+            )
+            for cv in cvs
+        ]

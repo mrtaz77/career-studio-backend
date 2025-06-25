@@ -14,6 +14,7 @@ from src.cv.schemas import (
     CVCreateRequest,
     CVFullOut,
     CVGenerateRequest,
+    CVListOut,
     CVOut,
     CVSaveRequest,
 )
@@ -21,6 +22,7 @@ from src.cv.services import (
     autosave_cv,
     create_new_cv,
     get_cv_details,
+    list_of_cvs,
     process_cv_generation,
     save_cv_version,
 )
@@ -78,6 +80,21 @@ async def create_cv(request: Request, payload: CVCreateRequest) -> JSONResponse:
     except Exception:
         logger.exception("CV creation failed")
         raise HTTPException(status_code=500, detail="Failed to create CV")
+
+
+@router.get(
+    "/list",
+    summary="Get list of cv ids belonging to the user",
+    response_model=list[CVListOut],
+    status_code=status.HTTP_200_OK,
+)
+async def get_list_of_cvs(request: Request) -> list[CVListOut]:
+    try:
+        uid = request.state.user.get("uid", "")
+        return await list_of_cvs(uid)
+    except Exception:
+        logger.exception("Failed to get list of CV IDs")
+        raise HTTPException(status_code=500, detail="Failed to get list of CV IDs")
 
 
 @router.get(
