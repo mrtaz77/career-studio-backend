@@ -133,3 +133,11 @@ class CVFullOut(BaseModel):
 
 class CVGenerateRequest(CVAutoSaveRequest):
     force_regenerate: Optional[bool] = False
+
+
+class CVListOut(BaseModel):
+    cv_id: int
+    latest_saved_version_id: int | None = None
+    version_number: int
+    created_at: datetime
+    updated_at: datetime

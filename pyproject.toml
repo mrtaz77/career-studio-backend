@@ -30,6 +30,8 @@ redis = "^6.2.0"
 supabase = "^2.15.3"
 jinja2 = "^3.1.6"
 requests = "^2.32.4"
+python-dotenv = "^1.1.1"
+httpx = "^0.28.1"
 
 [tool.black]
 line-length = 88
@@ -50,6 +52,26 @@ module = "src.prisma_client.*"
 ignore_errors = true
 follow_imports = "skip"
 
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["firebase_admin", "firebase_admin.*"]
 follow_untyped_imports = false
