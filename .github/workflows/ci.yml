@@ -47,6 +47,8 @@ jobs:
           echo "SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }}" >> .env
           echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
           echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+          echo "USER_1_EMAIL=${{ secrets.USER_1_EMAIL }}" >> .env
+          echo "USER_1_PASSWORD=${{ secrets.USER_1_PASSWORD }}" >> .env
           mkdir secrets
           cd secrets
           echo ${{ secrets.FIREBASE_ADMIN_SDK }} | base64 --decode >> firebase-adminsdk.json
