@@ -3,7 +3,11 @@ from logging import getLogger
 from fastapi import APIRouter, Body, HTTPException, Request, status
 
 from src.auth.exceptions import UserNotFoundError
-from src.users.exceptions import UsernameUnavailableException
+from src.users.exceptions import (
+    InvalidPhoneNumberException,
+    InvalidPhoneNumberFormatException,
+    UsernameUnavailableException,
+)
 from src.users.schemas import UserProfile, UserProfileUpdate
 from src.users.service import get_user_profile_by_uid, update_user_profile
 
@@ -68,9 +72,13 @@ async def update_profile(
         updated_user = await update_user_profile(uid, data)
         return updated_user
     except UserNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=e.status_code, detail=str(e))
     except UsernameUnavailableException as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except InvalidPhoneNumberException as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except InvalidPhoneNumberFormatException as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating user profile: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

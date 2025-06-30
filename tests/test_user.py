@@ -62,3 +62,30 @@ def test_username_unavailable_error(client, auth_headers, mocker):
     )
     assert response.status_code == 409
     assert response.json()["detail"] == "Username is unavailable"
+
+
+def test_invalid_phone_number_format_error(client, auth_headers):
+    response = client.patch(
+        f"{api_prefix}/users/me",
+        json={"phone": "+12345678"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid phone number format"
+    response = client.patch(
+        f"{api_prefix}/users/me",
+        json={"phone": "123-456-7890"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid phone number format"
+
+
+def test_invalid_phone_number_error(client, auth_headers):
+    response = client.patch(
+        f"{api_prefix}/users/me",
+        json={"phone": "+abc-1234"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid phone number"

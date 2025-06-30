@@ -1,8 +1,15 @@
 from logging import getLogger
 
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
+
 from src.auth.exceptions import UserNotFoundError
 from src.database import get_db
-from src.users.exceptions import UsernameUnavailableException
+from src.users.exceptions import (
+    InvalidPhoneNumberException,
+    InvalidPhoneNumberFormatException,
+    UsernameUnavailableException,
+)
 from src.users.schemas import UserProfile, UserProfileUpdate
 
 logger = getLogger(__name__)
@@ -80,12 +87,25 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
     Raises:
         UserNotFoundError: If user not found
         UsernameUnavailableException: If the new username is already taken
+        InvalidPhoneNumberException: If the phone number cannot be parsed
+        InvalidPhoneNumberFormatException: If phone number is invalid
     """
     async with get_db() as db:
         user = await db.user.find_unique(where={"uid": uid})
         logger.debug(f"Updating user profile for UID: {uid}, update data: {update}")
         if not user:
             raise UserNotFoundError()
+
+        if update.phone and update.phone != user.phone:
+            if not update.phone.startswith("+"):
+                raise InvalidPhoneNumberFormatException()
+
+            try:
+                parsed = phonenumbers.parse(update.phone, None)
+                if not phonenumbers.is_valid_number(parsed):
+                    raise InvalidPhoneNumberFormatException()
+            except NumberParseException:
+                raise InvalidPhoneNumberException()
 
         # Check username uniqueness if being changed
         if update.username and update.username != user.username:
