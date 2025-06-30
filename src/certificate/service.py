@@ -122,7 +122,7 @@ async def update_user_certificate(
     file: Optional[UploadFile],
 ) -> CertificateOut:
     async with get_db() as db, get_supabase() as supabase:
-        await get_certificate_or_404(db, uid, cert_id)
+        cert = await get_certificate_or_404(db, uid, cert_id)
 
         update_data: Dict[str, object] = {}
 
@@ -139,6 +139,7 @@ async def update_user_certificate(
                 )
 
         if file:
+            supabase.storage.from_(STORAGE_BUCKET).remove([cert.link])
             update_data["link"] = await upload_file_to_supabase(
                 supabase, uid, file, STORAGE_BUCKET
             )
@@ -155,6 +156,7 @@ async def update_user_certificate(
 
 
 async def delete_user_certificate(uid: str, cert_id: int) -> None:
-    async with get_db() as db:
-        await get_certificate_or_404(db, uid, cert_id)
+    async with get_db() as db, get_supabase() as supabase:
+        cert = await get_certificate_or_404(db, uid, cert_id)
+        supabase.storage.from_(STORAGE_BUCKET).remove([cert.link])
         await db.certification.delete(where={"id": cert_id})
