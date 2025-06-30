@@ -9,7 +9,6 @@ from src.constants import API_PREFIX, VERSION, headers, methods, origins
 from src.cv.router import router as cv_router
 from src.database import lifespan
 from src.education.router import router as education_router
-from src.job.router import router as job_router
 from src.middlewares import (
     FirebaseAuthMiddleware,
     LimitBodySizeMiddleware,
@@ -59,7 +58,6 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(auth_router, prefix=API_PREFIX)
     app.include_router(user_router, prefix=API_PREFIX)
     app.include_router(cv_router, prefix=API_PREFIX)
-    app.include_router(job_router, prefix=API_PREFIX)
     app.include_router(education_router, prefix=API_PREFIX)
     app.include_router(certificate_router, prefix=API_PREFIX)
 
