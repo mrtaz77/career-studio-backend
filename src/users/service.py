@@ -1,8 +1,15 @@
 from logging import getLogger
 
-from src.auth.exceptions import UserNotFoundError
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
+
+from src.auth.exceptions import UserNotFoundException
 from src.database import get_db
-from src.users.exceptions import UsernameUnavailableException
+from src.users.exceptions import (
+    InvalidPhoneNumberException,
+    InvalidPhoneNumberFormatException,
+    UsernameUnavailableException,
+)
 from src.users.schemas import UserProfile, UserProfileUpdate
 
 logger = getLogger(__name__)
@@ -24,36 +31,7 @@ async def get_user_profile_by_uid(uid: str) -> UserProfile:
     async with get_db() as db:
         user = await db.user.find_unique(where={"uid": uid})
         if not user:
-            raise UserNotFoundError()
-
-        return UserProfile(
-            username=user.username,
-            email=user.email,
-            img=user.img,
-            full_name=user.full_name,
-            address=user.address,
-            phone=user.phone,
-            updated_at=user.updated_at,
-        )
-
-
-async def get_user_profile_by_username(username: str) -> UserProfile:
-    """
-    Get user data by username.
-
-    Args:
-        username: User username
-
-    Returns:
-        UserProfile: User data
-
-    Raises:
-        UserNotFoundError: If user not found
-    """
-    async with get_db() as db:
-        user = await db.user.find_unique(where={"username": username})
-        if not user:
-            raise UserNotFoundError()
+            raise UserNotFoundException()
 
         return UserProfile(
             username=user.username,
@@ -80,12 +58,24 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
     Raises:
         UserNotFoundError: If user not found
         UsernameUnavailableException: If the new username is already taken
+        InvalidPhoneNumberException: If the phone number cannot be parsed
+        InvalidPhoneNumberFormatException: If phone number is invalid
     """
     async with get_db() as db:
         user = await db.user.find_unique(where={"uid": uid})
-        logger.debug(f"Updating user profile for UID: {uid}, update data: {update}")
         if not user:
-            raise UserNotFoundError()
+            raise UserNotFoundException()
+
+        if update.phone and update.phone != user.phone:
+            if not update.phone.startswith("+"):
+                raise InvalidPhoneNumberFormatException()
+
+            try:
+                parsed = phonenumbers.parse(update.phone, None)
+                if not phonenumbers.is_valid_number(parsed):
+                    raise InvalidPhoneNumberFormatException()
+            except NumberParseException:
+                raise InvalidPhoneNumberException()
 
         # Check username uniqueness if being changed
         if update.username and update.username != user.username:

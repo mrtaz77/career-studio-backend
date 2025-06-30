@@ -9,7 +9,7 @@ class UserAlreadyExistsError(Exception):
         self.status_code = 409
 
 
-class UserNotFoundError(Exception):
+class UserNotFoundException(Exception):
     """Raised when a user is not found in the database."""
 
     def __init__(self) -> None:

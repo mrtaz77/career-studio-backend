@@ -33,6 +33,7 @@ requests = "^2.32.4"
 python-dotenv = "^1.1.1"
 httpx = "^0.28.1"
 pytest-mock = "^3.14.1"
+pytest-asyncio = "^1.0.0"
 
 [tool.black]
 line-length = 88
@@ -53,6 +54,26 @@ module = "src.prisma_client.*"
 ignore_errors = true
 follow_imports = "skip"
 
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["firebase_admin", "firebase_admin.*"]
+follow_untyped_imports = false
+ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["firebase_admin", "firebase_admin.*"]
 follow_untyped_imports = false
