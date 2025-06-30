@@ -160,6 +160,7 @@ model CV_TechnicalSkill {
 
 model CV {
   id                       Int      @id @default(autoincrement())
+  title                    String   @db.Text @default("Untitled CV")
   user_id                  String   @db.Text
   type                     String
   bookmark                 Boolean  @default(false)
@@ -182,7 +183,7 @@ model CV {
 model CVVersion {
   id             Int     @id @default(autoincrement())
   cv_id          Int
-  version_number Int
+  version_number Int     @db.Integer @default(0)
   parent_version_id Int? @db.Integer
   pdf_url        String
   created_at     DateTime @db.Timestamp(6) @default(now())
