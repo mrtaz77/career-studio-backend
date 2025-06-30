@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import date
 from logging import getLogger
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -60,14 +60,13 @@ async def get_certificate_or_404(db: Prisma, uid: str, cert_id: int) -> Certific
         id=cert.id,
         title=cert.title,
         issuer=cert.issuer,
-        issued_date=cert.issued_date,
+        issued_date=str(cert.issued_date),
         link=cert.link,
     )
 
 
 def validate_file(filename: str, contents: bytes) -> None:
     ext = os.path.splitext(filename)[1].lower()
-    print(ext)
     if ext != ".pdf":
         raise CertificateUploadException("Only PDF files are supported.")
     file_size_mb = len(contents) / (1024 * 1024)
@@ -76,23 +75,31 @@ def validate_file(filename: str, contents: bytes) -> None:
 
 
 async def process_certificate_uploads(
-    uid: str, certs: list[CertificateFormData]
+    uid: str, certs: List[CertificateFormData]
 ) -> None:
     async with get_db() as db, get_supabase() as supabase:
         for cert in certs:
+            # 1) Validate date format
+            try:
+                _ = date.fromisoformat(cert["issued_date"])
+            except ValueError:
+                raise CertificateUploadException("Invalid issued_date. Use YYYY-MM-DD.")
 
-            cert_file = cert["file"]
+            # 2) Build full DateTime string
+            full_dt = f"{cert['issued_date']}T00:00:00.000Z"
 
+            # 3) Upload file
             path = await upload_file_to_supabase(
-                supabase, uid, cert_file, STORAGE_BUCKET
+                supabase, uid, cert["file"], STORAGE_BUCKET
             )
 
+            # 4) Create record
             await db.certification.create(
                 data={
                     "user_id": uid,
                     "title": cert["title"],
                     "issuer": cert["issuer"],
-                    "issued_date": datetime.fromisoformat(cert["issued_date"]),
+                    "issued_date": full_dt,  # ISO-8601 DateTime string
                     "link": path,
                 }
             )
@@ -106,7 +113,7 @@ async def get_user_certificates(uid: str) -> List[CertificateOut]:
                 id=cert.id,
                 title=cert.title,
                 issuer=cert.issuer,
-                issued_date=cert.issued_date,
+                issued_date=str(cert.issued_date),
                 link=generate_signed_url(supabase, cert.link, STORAGE_BUCKET),
             )
             for cert in certs
@@ -126,17 +133,21 @@ async def update_user_certificate(
 
         update_data: Dict[str, object] = {}
 
-        if title:
+        if title is not None:
             update_data["title"] = title
-        if issuer:
+
+        if issuer is not None:
             update_data["issuer"] = issuer
+
         if issued_date:
             try:
-                update_data["issued_date"] = datetime.fromisoformat(issued_date).date()
-            except Exception:
+                _ = date.fromisoformat(issued_date)
+            except ValueError:
                 raise CertificateUploadException(
                     "Invalid issued_date format. Use YYYY-MM-DD."
                 )
+            iso_dt = f"{issued_date}T00:00:00.000Z"
+            update_data["issued_date"] = {"set": iso_dt}
 
         if file:
             supabase.storage.from_(STORAGE_BUCKET).remove([cert.link])
@@ -144,13 +155,16 @@ async def update_user_certificate(
                 supabase, uid, file, STORAGE_BUCKET
             )
 
+        if not update_data:
+            raise CertificateUploadException("No fields provided to update")
+
         updated = await db.certification.update(where={"id": cert_id}, data=update_data)
 
         return CertificateOut(
             id=updated.id,
             title=updated.title,
             issuer=updated.issuer,
-            issued_date=updated.issued_date,
+            issued_date=str(updated.issued_date),
             link=generate_signed_url(supabase, updated.link, STORAGE_BUCKET),
         )
 
