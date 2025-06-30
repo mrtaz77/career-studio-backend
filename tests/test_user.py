@@ -1,15 +1,16 @@
+from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
-from src.users.schemas import UserProfileUpdate
 from test_util import api_prefix, get_firebase_token
 
 from src.app import create_app
 from src.auth.exceptions import UserNotFoundException
 from src.users.constants import USER_NOT_FOUND
 from src.users.exceptions import UsernameUnavailableException
+from src.users.schemas import UserProfileUpdate
 from src.users.service import get_user_profile_by_uid, update_user_profile
-from unittest.mock import AsyncMock, MagicMock
-from contextlib import asynccontextmanager
 
 
 @pytest.fixture
