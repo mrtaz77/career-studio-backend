@@ -3,6 +3,8 @@ from fastapi.testclient import TestClient
 from test_util import api_prefix, get_firebase_token
 
 from src.app import create_app
+from src.auth.exceptions import UserNotFoundException
+from src.users.constants import USER_NOT_FOUND
 from src.users.exceptions import UsernameUnavailableException
 
 
@@ -48,6 +50,27 @@ def test_user_profile_crud_flow(client, auth_headers):
     reverted = revert_resp.json()
     assert reverted["full_name"] == original["full_name"]
     assert reverted["address"] == original["address"]
+
+
+def test_user_not_found_error(client, auth_headers, mocker):
+    mocker.patch(
+        "src.users.router.update_user_profile",
+        side_effect=UserNotFoundException(),
+    )
+
+    response = client.patch(
+        f"{api_prefix}/users/me", json={"username": "takenname"}, headers=auth_headers
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == USER_NOT_FOUND
+
+    mocker.patch(
+        "src.users.router.get_user_profile_by_uid",
+        side_effect=UserNotFoundException(),
+    )
+    response = client.get(f"{api_prefix}/users/me", headers=auth_headers)
+    assert response.status_code == 404
+    assert response.json()["detail"] == USER_NOT_FOUND
 
 
 def test_username_unavailable_error(client, auth_headers, mocker):

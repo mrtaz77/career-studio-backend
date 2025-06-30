@@ -2,7 +2,7 @@ from logging import getLogger
 
 from fastapi import APIRouter, Body, HTTPException, Request, status
 
-from src.auth.exceptions import UserNotFoundError
+from src.auth.exceptions import UserNotFoundException
 from src.users.exceptions import (
     InvalidPhoneNumberException,
     InvalidPhoneNumberFormatException,
@@ -29,25 +29,24 @@ router = APIRouter(tags=["User"], prefix="/users")
     responses={
         200: {"description": "User profile retrieved"},
         401: {"description": "Invalid or missing token"},
+        404: {"description": "User not found"},
     },
 )
 async def get_profile(request: Request) -> UserProfile:
     try:
         uid = request.state.user.get("uid", "")
         user = await get_user_profile_by_uid(uid)
-        if user:
-            return UserProfile(
-                username=user.username,
-                full_name=user.full_name,
-                email=user.email,
-                img=user.img,
-                address=user.address,
-                phone=user.phone,
-                updated_at=user.updated_at,
-            )
-        raise HTTPException(status_code=404, detail="User not found")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        return UserProfile(
+            username=user.username,
+            full_name=user.full_name,
+            email=user.email,
+            img=user.img,
+            address=user.address,
+            phone=user.phone,
+            updated_at=user.updated_at,
+        )
+    except UserNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
 
 
 @router.patch(
@@ -71,7 +70,7 @@ async def update_profile(
         uid = request.state.user.get("uid", "")
         updated_user = await update_user_profile(uid, data)
         return updated_user
-    except UserNotFoundError as e:
+    except UserNotFoundException as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except UsernameUnavailableException as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
@@ -79,6 +78,3 @@ async def update_profile(
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except InvalidPhoneNumberFormatException as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating user profile: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")

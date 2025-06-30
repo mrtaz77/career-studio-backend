@@ -3,7 +3,7 @@ from logging import getLogger
 import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
 
-from src.auth.exceptions import UserNotFoundError
+from src.auth.exceptions import UserNotFoundException
 from src.database import get_db
 from src.users.exceptions import (
     InvalidPhoneNumberException,
@@ -31,7 +31,7 @@ async def get_user_profile_by_uid(uid: str) -> UserProfile:
     async with get_db() as db:
         user = await db.user.find_unique(where={"uid": uid})
         if not user:
-            raise UserNotFoundError()
+            raise UserNotFoundException()
 
         return UserProfile(
             username=user.username,
@@ -60,7 +60,7 @@ async def get_user_profile_by_username(username: str) -> UserProfile:
     async with get_db() as db:
         user = await db.user.find_unique(where={"username": username})
         if not user:
-            raise UserNotFoundError()
+            raise UserNotFoundException()
 
         return UserProfile(
             username=user.username,
@@ -92,9 +92,8 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
     """
     async with get_db() as db:
         user = await db.user.find_unique(where={"uid": uid})
-        logger.debug(f"Updating user profile for UID: {uid}, update data: {update}")
         if not user:
-            raise UserNotFoundError()
+            raise UserNotFoundException()
 
         if update.phone and update.phone != user.phone:
             if not update.phone.startswith("+"):
