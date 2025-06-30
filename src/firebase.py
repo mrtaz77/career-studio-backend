@@ -125,7 +125,7 @@ def get_user_email(uid: str) -> str:
         raise ValueError("User not found") from e
 
 
-async def verify_token_fastapi(
+def verify_token_fastapi(
     credentials: HTTPAuthorizationCredentials,
 ) -> Dict[str, Any]:
     """
@@ -157,7 +157,7 @@ async def verify_token_fastapi(
         )
 
 
-async def get_current_user(request: Request) -> Dict[str, Any]:
+def get_current_user(request: Request) -> Dict[str, Any]:
     """
     FastAPI dependency for getting the current authenticated user.
     This is now a wrapper around the middleware's state.
@@ -172,12 +172,11 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         HTTPException: If user is not authenticated
     """
     if not hasattr(request.state, "user"):
-        logger.warning(USER_NOT_AUTHENTICATED)
         raise HTTPException(status_code=401, detail=USER_NOT_AUTHENTICATED)
     return dict(request.state.user)
 
 
-async def get_current_uid(request: Request) -> str:
+def get_current_uid(request: Request) -> str:
     """
     FastAPI dependency for getting the current user's UID.
 
@@ -191,7 +190,6 @@ async def get_current_uid(request: Request) -> str:
         HTTPException: If user is not authenticated
     """
     if not hasattr(request.state, "uid"):
-        logger.warning(USER_NOT_AUTHENTICATED)
         raise HTTPException(status_code=401, detail=USER_NOT_AUTHENTICATED)
     return str(request.state.uid)
 
