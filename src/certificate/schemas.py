@@ -1,4 +1,3 @@
-from datetime import date
 from typing import TypedDict
 
 from pydantic import BaseModel
@@ -9,7 +8,7 @@ class CertificateOut(BaseModel):
     id: int
     title: str
     issuer: str
-    issued_date: date
+    issued_date: str
     link: str
 
 
