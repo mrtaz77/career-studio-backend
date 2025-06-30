@@ -24,3 +24,4 @@ class UserProfileUpdate(BaseModel):
     img: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
+    file: Optional[str] = None

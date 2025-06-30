@@ -10,6 +10,7 @@ from supabase import Client, create_client
 
 from src.config import settings
 from src.prisma_client import Prisma
+from src.prisma_client.errors import PrismaError
 
 logger = getLogger(__name__)
 prisma = Prisma()
@@ -25,15 +26,14 @@ async def get_db() -> AsyncGenerator[Prisma, None]:
 
     try:
         yield prisma
-    except Exception as e:
-        logger.error(f"Database query error: {str(e)}", exc_info=True)
+    except PrismaError as e:  # Only catch DB-specific exceptions
+        logger.error(f"Database query error: {e}")
         raise
 
 
 async def init_db() -> None:
     try:
         if not prisma.is_connected():
-            logger.info("Connecting to the database...")
             await prisma.connect()
     except Exception as e:
         logger.error(f"Database connection failed: {e}", exc_info=True)
@@ -43,14 +43,13 @@ async def init_db() -> None:
 async def close_db() -> None:
     try:
         if prisma.is_connected():
-            logger.info("Disconnecting database...")
             await prisma.disconnect()
     except Exception as e:
         logger.error(f"Error disconnecting from database: {e}", exc_info=True)
         raise
 
 
-async def init_redis_cache() -> None:
+def init_redis_cache() -> None:
     """
     Initialize Redis cache for FastAPI.
     """
@@ -72,7 +71,7 @@ async def get_supabase() -> AsyncGenerator[Client, None]:
         raise
 
 
-async def init_supabase() -> None:
+def init_supabase() -> None:
     global supabase
     try:
         supabase_project_url = settings.SUPABASE_PROJECT_URL
@@ -80,7 +79,6 @@ async def init_supabase() -> None:
 
         supabase = create_client(supabase_project_url, supabase_service_role_key)
 
-        logger.info("Supabase client initialized successfully.")
     except Exception as e:
         logger.error(f"Failed to initialize Supabase: {e}", exc_info=True)
         raise
@@ -89,7 +87,7 @@ async def init_supabase() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
-    await init_redis_cache()
-    await init_supabase()
+    init_redis_cache()
+    init_supabase()
     yield
     await close_db()

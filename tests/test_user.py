@@ -1,11 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
+from src.users.schemas import UserProfileUpdate
 from test_util import api_prefix, get_firebase_token
 
 from src.app import create_app
 from src.auth.exceptions import UserNotFoundException
 from src.users.constants import USER_NOT_FOUND
 from src.users.exceptions import UsernameUnavailableException
+from src.users.service import get_user_profile_by_uid, update_user_profile
+from unittest.mock import AsyncMock, MagicMock
+from contextlib import asynccontextmanager
 
 
 @pytest.fixture
@@ -90,14 +94,14 @@ def test_username_unavailable_error(client, auth_headers, mocker):
 def test_invalid_phone_number_format_error(client, auth_headers):
     response = client.patch(
         f"{api_prefix}/users/me",
-        json={"phone": "+12345678"},
+        json={"phone": "+120012301"},
         headers=auth_headers,
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid phone number format"
     response = client.patch(
         f"{api_prefix}/users/me",
-        json={"phone": "123-456-7890"},
+        json={"phone": "abc-1234"},
         headers=auth_headers,
     )
     assert response.status_code == 400
@@ -112,3 +116,21 @@ def test_invalid_phone_number_error(client, auth_headers):
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid phone number"
+
+
+@pytest.mark.asyncio
+async def test_get_user_profile_by_uid_user_not_found(mocker):
+    fake_db = MagicMock()
+    fake_db.user.find_unique = AsyncMock(return_value=None)
+
+    @asynccontextmanager
+    async def mock_get_db():
+        yield fake_db
+
+    mocker.patch("src.users.service.get_db", mock_get_db)
+
+    with pytest.raises(UserNotFoundException):
+        await get_user_profile_by_uid("nonexistent_uid")
+
+    with pytest.raises(UserNotFoundException):
+        await update_user_profile("nonexistent_uid", UserProfileUpdate())

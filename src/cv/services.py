@@ -391,7 +391,7 @@ async def _fetch_cv_related_entities(db: Prisma, cv: models.CV) -> tuple[
     return exp_links, pub_links, skill_links, proj_links, latest_version
 
 
-async def upload_pdf_bytes_to_supabase(
+def upload_pdf_bytes_to_supabase(
     supabase: Client, uid: str, content: bytes, bucket: str
 ) -> str:
     filename = f"{uid}/{uuid4()}.pdf"
@@ -500,9 +500,7 @@ async def process_cv_generation(
         )
         pdf_bytes = compile_latex_remotely(latex_code, 1)
 
-        path = await upload_pdf_bytes_to_supabase(
-            supabase, uid, pdf_bytes, STORAGE_BUCKET
-        )
+        path = upload_pdf_bytes_to_supabase(supabase, uid, pdf_bytes, STORAGE_BUCKET)
         await db.cv.update(where={"id": payload.cv_id}, data={"pdf_url": path})
 
         return generate_signed_url(supabase, path, STORAGE_BUCKET)

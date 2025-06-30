@@ -44,35 +44,6 @@ async def get_user_profile_by_uid(uid: str) -> UserProfile:
         )
 
 
-async def get_user_profile_by_username(username: str) -> UserProfile:
-    """
-    Get user data by username.
-
-    Args:
-        username: User username
-
-    Returns:
-        UserProfile: User data
-
-    Raises:
-        UserNotFoundError: If user not found
-    """
-    async with get_db() as db:
-        user = await db.user.find_unique(where={"username": username})
-        if not user:
-            raise UserNotFoundException()
-
-        return UserProfile(
-            username=user.username,
-            email=user.email,
-            img=user.img,
-            full_name=user.full_name,
-            address=user.address,
-            phone=user.phone,
-            updated_at=user.updated_at,
-        )
-
-
 async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfile:
     """
     Update user profile.
