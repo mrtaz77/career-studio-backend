@@ -1,4 +1,4 @@
-import random
+import secrets
 from datetime import datetime
 from logging import getLogger
 
@@ -90,8 +90,8 @@ async def get_user_by_uid(uid: str) -> UserCreate:
 
 
 async def generate_username() -> str:
-    username = f"{codename(separator='_')}_{random.randint(100, 999)}"
+    username = f"{codename(separator='_')}_{100 + secrets.randbelow(900)}"
     async with get_db() as db:
         while await db.user.find_unique(where={"username": username}):
-            username = f"{codename(separator='_')}_{random.randint(100, 999)}"
+            username = f"{codename(separator='_')}_{100 + secrets.randbelow(900)}"
     return username
