@@ -495,7 +495,7 @@ async def process_cv_generation(
                 id=c.id,
                 title=c.title,
                 issuer=c.issuer,
-                issued_date=c.issued_date,
+                issued_date=str(c.issued_date),
                 link=generate_signed_url(
                     supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
                 ),

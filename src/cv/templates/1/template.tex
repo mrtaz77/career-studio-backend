@@ -100,7 +100,7 @@
 \begin{rSection}{CERTIFICATIONS}
 \begin{itemize} \setlength{\itemsep}{-5pt}
 ((* for cert in certificates *))
-    \item \textbf{((( cert.title )))}, ((( cert.issuer ))) — ((( cert.issued_date.strftime("%b %Y") )))
+    \item \textbf{((( cert.title )))}, ((( cert.issuer ))) — ((( cert.issued_date|format_date )))
     \newline \href{((( cert.link )))}{\textit{View Certificate}}
 ((* endfor *))
 \end{itemize}
