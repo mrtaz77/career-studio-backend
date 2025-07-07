@@ -7,7 +7,6 @@ from fastapi.security import HTTPBearer
 from firebase_admin import auth, credentials
 from firebase_admin.exceptions import FirebaseError
 
-
 __all__ = ["auth"]
 
 logger = getLogger(__name__)
