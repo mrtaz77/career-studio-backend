@@ -1,4 +1,9 @@
-from src.cv.constants import CV_INVALID_TYPE, CV_NOT_FOUND, CV_SAVE_FAILED
+from src.cv.constants import (
+    CV_INVALID_TEMPLATE,
+    CV_INVALID_TYPE,
+    CV_NOT_FOUND,
+    CV_SAVE_FAILED,
+)
 
 
 class CVNotFoundException(Exception):
@@ -19,4 +24,11 @@ class CVInvalidTypeException(Exception):
     def __init__(self, message: str = CV_INVALID_TYPE) -> None:
         self.message = message
         self.status_code = 400
+        super().__init__(self.message)
+
+
+class CVInvalidTemplateException(Exception):
+    def __init__(self, message: str = CV_INVALID_TEMPLATE) -> None:
+        self.message = message
+        self.status_code = 404
         super().__init__(self.message)

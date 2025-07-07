@@ -12,6 +12,7 @@ from src.certificate.service import STORAGE_BUCKET as CERTIFICATE_STORAGE_BUCKET
 from src.certificate.service import generate_signed_url
 from src.config import settings
 from src.cv.exceptions import (
+    CVInvalidTemplateException,
     CVInvalidTypeException,
     CVNotFoundException,
     CVSaveException,
@@ -40,6 +41,7 @@ from src.util import serialize_for_json, to_datetime
 logger = getLogger(__name__)
 REDIS_AUTOSAVE_PREFIX = "autosave:cv:"
 STORAGE_BUCKET = "cvs"
+NUMBER_OF_CV_TEMPLATES = 1
 
 redis_client = aioredis.from_url(
     f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}", decode_responses=True
@@ -51,7 +53,7 @@ async def autosave_cv(uid: str, payload: CVAutoSaveRequest) -> None:
     try:
         raw = {
             "user_id": uid,
-            "draft_data": payload.draft_data.model_dump(),
+            "draft_content": payload.draft_content.model_dump(),
             "timestamp": datetime.now(timezone.utc),
         }
         value = json.dumps(serialize_for_json(raw))
@@ -67,9 +69,8 @@ async def save_cv_version(uid: str, payload: CVSaveRequest) -> CVOut:
         version = await create_new_version(db, payload)
         updated_cv = await update_cv(db, payload.cv_id, version.id)
         await clear_existing_links(db, payload.cv_id)
-        await process_content(db, payload.cv_id, payload.content)
+        await process_content(db, payload.cv_id, payload.save_content)
         await redis_client.delete(f"{REDIS_AUTOSAVE_PREFIX}{payload.cv_id}")
-
         return build_cv_out(updated_cv, version.version_number)
 
 
@@ -219,6 +220,8 @@ async def process_project_details(db: Prisma, proj_id: int, project: ProjectIn) 
 def build_cv_out(updated_cv: models.CV, version: int) -> CVOut:
     return CVOut(
         id=updated_cv.id,
+        title=updated_cv.title,
+        template=updated_cv.template,
         type=updated_cv.type,
         is_draft=updated_cv.is_draft,
         bookmark=updated_cv.bookmark,
@@ -230,9 +233,12 @@ def build_cv_out(updated_cv: models.CV, version: int) -> CVOut:
     )
 
 
-async def create_new_cv(uid: str, cv_type: str) -> int:
+async def create_new_cv(uid: str, cv_type: str, cv_template: int) -> int:
     if cv_type not in {"academic", "industry"}:
         raise CVInvalidTypeException()
+
+    if cv_template <= 0 or cv_template > NUMBER_OF_CV_TEMPLATES:
+        raise CVInvalidTemplateException()
 
     async with get_db() as db:
         new_cv = await db.cv.create(
@@ -241,6 +247,8 @@ async def create_new_cv(uid: str, cv_type: str) -> int:
                 "type": cv_type,
                 "is_draft": True,
                 "bookmark": False,
+                "title": f"CV-{uuid4().hex[:8]}",
+                "template": cv_template,
             }
         )
         return int(new_cv.id)
@@ -261,10 +269,12 @@ async def get_cv_details(uid: str, cv_id: int) -> CVFullOut:
 
 def _build_cv_from_cache(cv_id: int, cached: str) -> CVFullOut:
     parsed = json.loads(cached)
-    draft = parsed["draft_data"]
+    draft = parsed["draft_content"]
     return CVFullOut(
         id=cv_id,
         type=draft.get("type", ""),
+        template=draft.get("template", 1),
+        title=draft.get("title", ""),
         is_draft=True,
         bookmark=draft.get("bookmark", False),
         pdf_url=draft.get("pdf_url"),
@@ -352,6 +362,8 @@ async def _build_cv_from_db(db: Prisma, cv: models.CV) -> CVFullOut:
     return CVFullOut(
         id=cv.id,
         type=cv.type,
+        title=cv.title,
+        template=cv.template,
         is_draft=cv.is_draft,
         bookmark=cv.bookmark,
         pdf_url=cv.pdf_url,
@@ -385,9 +397,12 @@ async def _fetch_cv_related_entities(db: Prisma, cv: models.CV) -> tuple[
     proj_links = await db.cv_project.find_many(
         where={"cv_id": cv.id}, include={"project": True}
     )
-    latest_version = await db.cvversion.find_unique(
-        where={"id": cv.latest_saved_version_id}
-    )
+    if cv.latest_saved_version_id:
+        latest_version = await db.cvversion.find_unique(
+            where={"id": cv.latest_saved_version_id}
+        )
+    else:
+        latest_version = 0
     return exp_links, pub_links, skill_links, proj_links, latest_version
 
 
@@ -515,6 +530,8 @@ async def list_of_cvs(uid: str) -> list[CVListOut]:
         return [
             CVListOut(
                 cv_id=cv.id,
+                title=cv.title,
+                template=cv.template,
                 latest_saved_version_id=cv.latest_saved_version_id,
                 version_number=(
                     cv.latest_version.version_number if cv.latest_version else 0

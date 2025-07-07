@@ -1,7 +1,7 @@
 generator client {
   provider             = "prisma-client-py"
   output               = "../src/prisma_client"
-  recursive_type_depth = 5
+  recursive_type_depth = "5"
 }
 
 datasource db {
@@ -10,48 +10,45 @@ datasource db {
 }
 
 model User {
-  uid        String   @id
-  username   String   @unique
-  full_name  String?
-  email      String   @unique
-  img        String?
-  address    String?
-  phone      String?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
+  uid            String              @id
+  username       String              @unique
+  full_name      String?
+  email          String              @unique
+  address        String?
+  phone          String?
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @updatedAt
+  img            String?
+  achievements   Achievement[]
   cvs            CV[]
   certifications Certification[]
   educations     Education[]
-  achievements   Achievement[]
   portfolios     Portfolio[]
   feedbacks      PortfolioFeedback[] @relation("ReviewerFeedback")
 }
 
 model Education {
-  id           Int     @id @default(autoincrement())
-  user_id      String  @db.Text
-  degree       String
-  institution  String
-  location     String
-  start_date   DateTime @db.Date
-  end_date     DateTime @db.Date
-  gpa          Float
-  honors       String?
-
-  user User @relation(fields: [user_id], references: [uid])
+  id          Int      @id @default(autoincrement())
+  degree      String
+  institution String
+  location    String
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  gpa         Float
+  honors      String?
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [uid])
 }
 
 model Achievement {
   id          Int    @id @default(autoincrement())
-  user_id     String @db.Text
+  user_id     String
   description String
-
-  user User @relation(fields: [user_id], references: [uid])
+  user        User   @relation(fields: [user_id], references: [uid])
 }
 
 model Experience {
-  id              Int     @id @default(autoincrement())
+  id              Int                    @id @default(autoincrement())
   job_title       String
   position        String
   company         String
@@ -61,41 +58,37 @@ model Experience {
   employment_type String
   location_type   String
   industry        String
-  start_date      DateTime @db.Date
-  end_date        DateTime @db.Date
+  start_date      DateTime               @db.Date
+  end_date        DateTime               @db.Date
   description     String
-
-  cv_links         CV_Experience[]
-  portfolio_links  Portfolio_Experience[]
+  cv_links        CV_Experience[]
+  portfolio_links Portfolio_Experience[]
 }
 
 model CV_Experience {
   cv_id         Int
   experience_id Int
-
-  cv         CV         @relation(fields: [cv_id], references: [id], onDelete: Cascade)
-  experience Experience @relation(fields: [experience_id], references: [id])
+  cv            CV         @relation(fields: [cv_id], references: [id], onDelete: Cascade)
+  experience    Experience @relation(fields: [experience_id], references: [id])
 
   @@id([cv_id, experience_id])
 }
 
 model Certification {
-  id          Int     @id @default(autoincrement())
-  user_id     String  @db.Text
+  id          Int      @id @default(autoincrement())
   title       String
   issuer      String
   issued_date DateTime @db.Date
   link        String
-
-  user            User @relation(fields: [user_id], references: [uid])
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [uid])
 }
 
 model Publication {
-  id       Int     @id @default(autoincrement())
-  title    String
-  journal  String
-  year     Int
-
+  id              Int                  @id @default(autoincrement())
+  title           String
+  journal         String
+  year            Int
   cv_links        CV_Publication[]
   portfolio_links Portfolio_Research[]
 }
@@ -103,39 +96,35 @@ model Publication {
 model CV_Publication {
   cv_id          Int
   publication_id Int
-
-  cv           CV           @relation(fields: [cv_id], references: [id], onDelete: Cascade)
-  publication  Publication  @relation(fields: [publication_id], references: [id])
+  cv             CV          @relation(fields: [cv_id], references: [id], onDelete: Cascade)
+  publication    Publication @relation(fields: [publication_id], references: [id])
 
   @@id([cv_id, publication_id])
 }
 
 model Project {
-  id          Int     @id @default(autoincrement())
-  name        String
-  description String
-
-  cv_links         CV_Project[]
-  portfolio_links  Portfolio_Project[]
-  technologies     ProjectTechnology[]
+  id              Int                 @id @default(autoincrement())
+  name            String
+  description     String
+  cv_links        CV_Project[]
+  portfolio_links Portfolio_Project[]
+  technologies    ProjectTechnology[]
 }
 
 model CV_Project {
   cv_id      Int
   project_id Int
-
-  cv      CV      @relation(fields: [cv_id], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [project_id], references: [id])
+  cv         CV      @relation(fields: [cv_id], references: [id], onDelete: Cascade)
+  project    Project @relation(fields: [project_id], references: [id])
 
   @@id([cv_id, project_id])
 }
 
 model ProjectTechnology {
-  id          Int     @id @default(autoincrement())
-  project_id  Int
-  technology  String
-
-  project     Project @relation(fields: [project_id], references: [id])
+  id         Int     @id @default(autoincrement())
+  project_id Int
+  technology String
+  project    Project @relation(fields: [project_id], references: [id])
 }
 
 model ResourceURL {
@@ -149,87 +138,80 @@ model ResourceURL {
 }
 
 model TechnicalSkill {
-  id       Int     @id @default(autoincrement())
-  name     String
-  category String
-
-  cv_links         CV_TechnicalSkill[]
-  portfolio_links  Portfolio_TechnicalSkill[]
+  id              Int                        @id @default(autoincrement())
+  name            String
+  category        String
+  cv_links        CV_TechnicalSkill[]
+  portfolio_links Portfolio_TechnicalSkill[]
 }
 
 model CV_TechnicalSkill {
-  cv_id        Int
-  tech_skill_id Int
-
-  cv           CV             @relation(fields: [cv_id], references: [id], onDelete: Cascade)
+  cv_id           Int
+  tech_skill_id   Int
+  cv              CV             @relation(fields: [cv_id], references: [id], onDelete: Cascade)
   technical_skill TechnicalSkill @relation(fields: [tech_skill_id], references: [id])
 
   @@id([cv_id, tech_skill_id])
 }
 
 model CV {
-  id                       Int      @id @default(autoincrement())
-  user_id                  String   @db.Text
-  title                    String
-  type                     String
-  bookmark                 Boolean  @default(false)
-  is_draft                 Boolean  @default(true)
-  pdf_url                  String?
-  latest_saved_version_id  Int?
-  created_at               DateTime @db.Timestamp(6) @default(now())
-  updated_at               DateTime @db.Timestamp(6) @updatedAt
-
-  user            User          @relation(fields: [user_id], references: [uid])
-  latest_version  CVVersion?    @relation(name: "LatestVersion", fields: [latest_saved_version_id], references: [id])
-  versions        CVVersion[]   @relation(name: "AllVersions")
-
-  experience       CV_Experience[]
-  publications     CV_Publication[]
-  projects         CV_Project[]
-  technical_skills CV_TechnicalSkill[]
+  id                      Int                 @id @default(autoincrement())
+  user_id                 String
+  type                    String
+  bookmark                Boolean             @default(false)
+  is_draft                Boolean             @default(true)
+  pdf_url                 String?
+  latest_saved_version_id Int?
+  created_at              DateTime            @default(now()) @db.Timestamp(6)
+  updated_at              DateTime            @updatedAt @db.Timestamp(6)
+  title                   String
+  template                Int                 @default(1)
+  latest_version          CVVersion?          @relation("LatestVersion", fields: [latest_saved_version_id], references: [id])
+  user                    User                @relation(fields: [user_id], references: [uid])
+  versions                CVVersion[]         @relation("AllVersions")
+  experience              CV_Experience[]
+  projects                CV_Project[]
+  publications            CV_Publication[]
+  technical_skills        CV_TechnicalSkill[]
 }
 
 model CVVersion {
-  id             Int     @id @default(autoincrement())
-  cv_id          Int
-  version_number Int
-  parent_version_id Int? @db.Integer
-  pdf_url        String
-  created_at     DateTime @db.Timestamp(6) @default(now())
-
-  cv CV @relation(name: "AllVersions", fields: [cv_id], references: [id], onDelete: Cascade)
-  parent_version    CVVersion? @relation("VersionParent", fields: [parent_version_id], references: [id])
-  child_versions   CVVersion[] @relation("VersionParent")
-  referenced_by CV[] @relation(name: "LatestVersion")
+  id                Int         @id @default(autoincrement())
+  cv_id             Int
+  version_number    Int
+  pdf_url           String
+  created_at        DateTime    @default(now()) @db.Timestamp(6)
+  parent_version_id Int?
+  referenced_by     CV[]        @relation("LatestVersion")
+  cv                CV          @relation("AllVersions", fields: [cv_id], references: [id], onDelete: Cascade)
+  parent_version    CVVersion?  @relation("VersionParent", fields: [parent_version_id], references: [id])
+  child_versions    CVVersion[] @relation("VersionParent")
 }
 
-
 model Portfolio {
-  id            Int     @id @default(autoincrement())
-  user_id       String  @db.Text
-  theme         String
-  custom_domain String?
-  seo_meta      Json?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
-  user               User        @relation(fields: [user_id], references: [uid])
-  feedbacks          PortfolioFeedback[]
-  experience         Portfolio_Experience[]
-  projects           Portfolio_Project[]
-  technical_skills   Portfolio_TechnicalSkill[]
-  research           Portfolio_Research[]
+  id               Int                        @id @default(autoincrement())
+  user_id          String
+  theme            String
+  custom_domain    String?
+  seo_meta         Json?
+  created_at       DateTime                   @default(now())
+  updated_at       DateTime                   @updatedAt
+  user             User                       @relation(fields: [user_id], references: [uid])
+  feedbacks        PortfolioFeedback[]
+  experience       Portfolio_Experience[]
+  projects         Portfolio_Project[]
+  research         Portfolio_Research[]
+  technical_skills Portfolio_TechnicalSkill[]
 }
 
 model PortfolioFeedback {
-  id            Int     @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   portfolio_id  Int
   reviewer_id   String?
   reviewer_name String
   rating        Int
   comment       String
-  created_at    DateTime @default(now())
-
+  created_at    DateTime  @default(now())
   portfolio     Portfolio @relation(fields: [portfolio_id], references: [id])
   reviewer      User?     @relation("ReviewerFeedback", fields: [reviewer_id], references: [uid])
 }
@@ -237,29 +219,26 @@ model PortfolioFeedback {
 model Portfolio_Experience {
   portfolio_id Int
   exp_id       Int
-
-  portfolio  Portfolio @relation(fields: [portfolio_id], references: [id])
-  experience Experience @relation(fields: [exp_id], references: [id])
+  experience   Experience @relation(fields: [exp_id], references: [id])
+  portfolio    Portfolio  @relation(fields: [portfolio_id], references: [id])
 
   @@id([portfolio_id, exp_id])
 }
 
 model Portfolio_Project {
-  portfolio_id   Int
-  project_id     Int
-  thumbnail_url  String?
-
-  portfolio Portfolio @relation(fields: [portfolio_id], references: [id])
-  project   Project   @relation(fields: [project_id], references: [id])
+  portfolio_id  Int
+  project_id    Int
+  thumbnail_url String?
+  portfolio     Portfolio @relation(fields: [portfolio_id], references: [id])
+  project       Project   @relation(fields: [project_id], references: [id])
 
   @@id([portfolio_id, project_id])
 }
 
 model Portfolio_TechnicalSkill {
-  portfolio_id Int
-  tech_skill_id Int
-
-  portfolio      Portfolio      @relation(fields: [portfolio_id], references: [id])
+  portfolio_id    Int
+  tech_skill_id   Int
+  portfolio       Portfolio      @relation(fields: [portfolio_id], references: [id])
   technical_skill TechnicalSkill @relation(fields: [tech_skill_id], references: [id])
 
   @@id([portfolio_id, tech_skill_id])
@@ -270,9 +249,8 @@ model Portfolio_Research {
   publication_id Int
   thumbnail_url  String?
   description    String?
-
-  portfolio   Portfolio   @relation(fields: [portfolio_id], references: [id])
-  publication Publication @relation(fields: [publication_id], references: [id])
+  portfolio      Portfolio   @relation(fields: [portfolio_id], references: [id])
+  publication    Publication @relation(fields: [publication_id], references: [id])
 
   @@id([portfolio_id, publication_id])
 }
