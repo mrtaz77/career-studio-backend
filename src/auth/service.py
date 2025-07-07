@@ -4,6 +4,8 @@ from logging import getLogger
 from src.auth.exceptions import UserAlreadyExistsError
 from src.auth.schemas import SignupResponse, UserCreate
 from src.database import get_db
+from codename import codename  # type: ignore
+import random
 
 logger = getLogger(__name__)
 
@@ -68,3 +70,11 @@ async def get_user_by_uid(uid: str) -> UserCreate:
             img=user.img,
             uid=user.uid,
         )
+
+
+async def generate_username() -> str:
+    username = f"{codename(separator='_')}_{random.randint(100, 999)}"
+    async with get_db() as db:
+        while await db.user.find_unique(where={"username": username}):
+            username = f"{codename(separator='_')}_{random.randint(100, 999)}"
+    return username
