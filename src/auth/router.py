@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer
 
 from src.auth.exceptions import UserAlreadyExistsError
 from src.auth.schemas import AuthResponse, SignupResponse, UserCreate
-from src.auth.service import create_user, get_user_by_uid
+from src.auth.service import create_user, generate_username, get_user_by_uid
 
 logger = getLogger(__name__)
 
@@ -42,8 +42,12 @@ async def signup(request: Request) -> SignupResponse:
         SignupResponse: Created user confirmation
     """
     try:
+        username = request.state.user.get("name")
+        if not username:
+            username = await generate_username()
+
         user_data = UserCreate(
-            username=request.state.user.get("name", ""),
+            username=username,
             email=request.state.user.get("email", ""),
             img=request.state.user.get("picture"),
             uid=request.state.user.get("uid", ""),
