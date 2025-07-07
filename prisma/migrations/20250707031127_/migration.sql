@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "CV" ADD COLUMN     "template" INTEGER NOT NULL DEFAULT 1;

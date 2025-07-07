@@ -76,6 +76,7 @@ class PublicationIn(BaseModel):
 
 
 class CVSaveContent(BaseModel):
+    title: str
     experiences: List[ExperienceIn]
     publications: List[PublicationIn]
     technical_skills: List[TechnicalSkillIn]
@@ -87,13 +88,13 @@ class CVSaveContent(BaseModel):
 
 class CVAutoSaveRequest(BaseModel):
     cv_id: int
-    draft_data: CVSaveContent  # stored as JSON in Redis
+    draft_content: CVSaveContent  # stored as JSON in Redis
 
 
 class CVSaveRequest(BaseModel):
     cv_id: int
     pdf_url: Optional[str] = None
-    content: CVSaveContent
+    save_content: CVSaveContent
 
 
 # === Output Schema ===
@@ -101,6 +102,8 @@ class CVSaveRequest(BaseModel):
 
 class CVOut(BaseModel):
     id: int
+    title: str
+    template: int
     type: str
     is_draft: bool
     bookmark: bool
@@ -113,11 +116,14 @@ class CVOut(BaseModel):
 
 class CVCreateRequest(BaseModel):
     type: str
+    template: int
 
 
 class CVFullOut(BaseModel):
     id: int
     type: str
+    title: str
+    template: int
     is_draft: bool
     bookmark: bool
     pdf_url: Optional[str] = None
@@ -137,6 +143,8 @@ class CVGenerateRequest(CVAutoSaveRequest):
 
 class CVListOut(BaseModel):
     cv_id: int
+    title: str
+    template: int
     latest_saved_version_id: int | None = None
     version_number: int
     created_at: datetime

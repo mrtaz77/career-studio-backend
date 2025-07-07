@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from src.cv.constants import CV_AUTOSAVE_SUCCESS, CV_SAVE_FAILED
 from src.cv.exceptions import (
+    CVInvalidTemplateException,
     CVInvalidTypeException,
     CVNotFoundException,
     CVSaveException,
@@ -18,7 +19,7 @@ from src.cv.schemas import (
     CVOut,
     CVSaveRequest,
 )
-from src.cv.services import (
+from src.cv.service import (
     autosave_cv,
     create_new_cv,
     get_cv_details,
@@ -73,10 +74,12 @@ async def save_endpoint(request: Request, payload: CVSaveRequest) -> CVOut:
 async def create_cv(request: Request, payload: CVCreateRequest) -> JSONResponse:
     try:
         uid = request.state.user.get("uid", "")
-        cv_id = await create_new_cv(uid, payload.type)
+        cv_id = await create_new_cv(uid, payload.type, payload.template)
         return JSONResponse(status_code=201, content={"cv_id": cv_id})
     except CVInvalidTypeException as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except CVInvalidTemplateException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception:
         logger.exception("CV creation failed")
         raise HTTPException(status_code=500, detail="Failed to create CV")
