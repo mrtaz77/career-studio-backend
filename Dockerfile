@@ -21,7 +21,7 @@ RUN apk add --no-cache \
     openssl \
     openssl-dev \
     postgresql-dev && \
-    curl -ssL https://install.python-poetry.org | python3 - && \
+    curl --proto "=https" -ssL https://install.python-poetry.org | python3 - && \
     addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Set working directory
@@ -34,7 +34,8 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-interaction --no-ansi --no-root --with dev
 
 # Copy application code
-COPY . .
+COPY src/ ./src
+COPY prisma/ ./prisma
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/src/prisma_client && \

@@ -23,6 +23,7 @@ model User {
   cvs            CV[]
   certifications Certification[]
   educations     Education[]
+  achievements   Achievement[]
   portfolios     Portfolio[]
   feedbacks      PortfolioFeedback[] @relation("ReviewerFeedback")
 }
@@ -37,6 +38,14 @@ model Education {
   end_date     DateTime @db.Date
   gpa          Float
   honors       String?
+
+  user User @relation(fields: [user_id], references: [uid])
+}
+
+model Achievement {
+  id          Int    @id @default(autoincrement())
+  user_id     String @db.Text
+  description String
 
   user User @relation(fields: [user_id], references: [uid])
 }
@@ -162,6 +171,7 @@ model CV {
   id                       Int      @id @default(autoincrement())
   title                    String   @db.Text @default("Untitled CV")
   user_id                  String   @db.Text
+  title                    String
   type                     String
   bookmark                 Boolean  @default(false)
   is_draft                 Boolean  @default(true)
