@@ -19,7 +19,7 @@ from src.cv.schemas import (
     CVOut,
     CVSaveRequest,
 )
-from src.cv.services import (
+from src.cv.service import (
     autosave_cv,
     create_new_cv,
     get_cv_details,

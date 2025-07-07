@@ -71,7 +71,6 @@ async def save_cv_version(uid: str, payload: CVSaveRequest) -> CVOut:
         await clear_existing_links(db, payload.cv_id)
         await process_content(db, payload.cv_id, payload.save_content)
         await redis_client.delete(f"{REDIS_AUTOSAVE_PREFIX}{payload.cv_id}")
-
         return build_cv_out(updated_cv, version.version_number)
 
 
@@ -248,7 +247,7 @@ async def create_new_cv(uid: str, cv_type: str, cv_template: int) -> int:
                 "type": cv_type,
                 "is_draft": True,
                 "bookmark": False,
-                "title": f"Untitled CV-{uuid4()}",
+                "title": f"CV-{uuid4().hex[:8]}",
                 "template": cv_template,
             }
         )
@@ -398,9 +397,12 @@ async def _fetch_cv_related_entities(db: Prisma, cv: models.CV) -> tuple[
     proj_links = await db.cv_project.find_many(
         where={"cv_id": cv.id}, include={"project": True}
     )
-    latest_version = await db.cvversion.find_unique(
-        where={"id": cv.latest_saved_version_id}
-    )
+    if cv.latest_saved_version_id:
+        latest_version = await db.cvversion.find_unique(
+            where={"id": cv.latest_saved_version_id}
+        )
+    else:
+        latest_version = 0
     return exp_links, pub_links, skill_links, proj_links, latest_version
 
 
