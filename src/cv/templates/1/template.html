@@ -206,12 +206,20 @@
 <section>
     <h2>Technical Skills</h2>
     <table class="skills">
-        ((* for category, items in technical_skills | groupby('category') *))
-        <tr>
-            <td>((( category ))):</td>
-            <td>((( items | map(attribute='name') | join(', ') )))</td>
-        </tr>
-        ((* endfor *))
+        <thead>
+            <tr>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            ((* for category, items in technical_skills | groupby('category') *))
+            <tr>
+                <td>((( category ))):</td>
+                <td>((( items | map(attribute='name') | join(', ') )))</td>
+            </tr>
+            ((* endfor *))
+        </tbody>
     </table>
 </section>
 

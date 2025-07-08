@@ -158,19 +158,7 @@ async def process_publications(
 async def process_publication_details(
     db: Prisma, pub_id: int, publication: PublicationIn
 ) -> None:
-    await db.resourceurl.delete_many(
-        where={"source_id": pub_id, "source_type": "publication"}
-    )
-
-    for url in publication.urls:
-        await db.resourceurl.create(
-            data={
-                "source_id": pub_id,
-                "source_type": "publication",
-                "label": url.label,
-                "url": url.url,
-            }
-        )
+    await _create_resource_urls(db, pub_id, "publication", publication.urls)
 
 
 async def process_technical_skills(
@@ -202,24 +190,13 @@ async def process_projects(db: Prisma, cv_id: int, projects: List[ProjectIn]) ->
 
 async def process_project_details(db: Prisma, proj_id: int, project: ProjectIn) -> None:
     await db.projecttechnology.delete_many(where={"project_id": proj_id})
-    await db.resourceurl.delete_many(
-        where={"source_id": proj_id, "source_type": "project"}
-    )
 
     for tech in project.technologies:
         await db.projecttechnology.create(
             data={"project_id": proj_id, "technology": tech.technology}
         )
 
-    for url in project.urls:
-        await db.resourceurl.create(
-            data={
-                "source_id": proj_id,
-                "source_type": "project",
-                "label": url.label,
-                "url": url.url,
-            }
-        )
+    await _create_resource_urls(db, proj_id, "project", project.urls)
 
 
 def build_cv_out(updated_cv: models.CV, version: int) -> CVOut:
@@ -430,31 +407,13 @@ async def process_cv_generation(
         if not force_regenerate and cv.pdf_url:
             return generate_signed_url(supabase, cv.pdf_url, STORAGE_BUCKET)
 
-        user = await db.user.find_unique(where={"uid": uid})
-        certificates = await db.certification.find_many(
-            where={"user_id": uid}, order={"issued_date": "desc"}
+        user_out, certificates_out = await _fetch_user_and_certificates(
+            db, supabase, uid
         )
-
-        user_out = UserProfile(**jsonable_encoder(user))
-        certificates_out = [
-            CertificateOut(
-                id=c.id,
-                title=c.title,
-                issuer=c.issuer,
-                issued_date=str(c.issued_date),
-                link=generate_signed_url(
-                    supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
-                ),
-            )
-            for c in certificates
-        ]
 
         # Use content directly from payload
         draft = payload.draft_content
-        educations = await db.education.find_many(
-            where={"user_id": uid}, order={"end_date": "desc"}
-        )
-        educations_out = [EducationOut(**e.__dict__) for e in educations]
+        educations_out = await _fetch_educations(db, uid)
 
         latex_code = render_resume_latex(
             user_out,
@@ -506,33 +465,15 @@ async def render_cv(uid: str, payload: CVAutoSaveRequest) -> str:
         await validate_cv_ownership(db, uid, payload.cv_id)
 
         # Fetch user and certificates
-        user = await db.user.find_unique(where={"uid": uid})
-        certificates = await db.certification.find_many(
-            where={"user_id": uid}, order={"issued_date": "desc"}
+        user_out, certificates_out = await _fetch_user_and_certificates(
+            db, supabase, uid
         )
-
-        user_out = UserProfile(**jsonable_encoder(user))
-        certificates_out = [
-            CertificateOut(
-                id=c.id,
-                title=c.title,
-                issuer=c.issuer,
-                issued_date=str(c.issued_date),
-                link=generate_signed_url(
-                    supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
-                ),
-            )
-            for c in certificates
-        ]
 
         # Use draft content from payload
         draft = payload.draft_content
 
         # Fetch education from DB
-        educations = await db.education.find_many(
-            where={"user_id": uid}, order={"end_date": "desc"}
-        )
-        educations_out = [EducationOut(**e.__dict__) for e in educations]
+        educations_out = await _fetch_educations(db, uid)
 
         # Render to HTML (as string)
         html = render_resume_html(
@@ -547,3 +488,56 @@ async def render_cv(uid: str, payload: CVAutoSaveRequest) -> str:
         )
 
         return html
+
+
+async def _fetch_user_and_certificates(
+    db: Prisma, supabase: Client, uid: str
+) -> tuple[UserProfile, List[CertificateOut]]:
+    """Fetch user profile and certificates for CV generation."""
+    user = await db.user.find_unique(where={"uid": uid})
+    certificates = await db.certification.find_many(
+        where={"user_id": uid}, order={"issued_date": "desc"}
+    )
+
+    user_out = UserProfile(**jsonable_encoder(user))
+    certificates_out = [
+        CertificateOut(
+            id=c.id,
+            title=c.title,
+            issuer=c.issuer,
+            issued_date=str(c.issued_date),
+            link=generate_signed_url(
+                supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
+            ),
+        )
+        for c in certificates
+    ]
+
+    return user_out, certificates_out
+
+
+async def _fetch_educations(db: Prisma, uid: str) -> List[EducationOut]:
+    """Fetch and transform education data for CV generation."""
+    educations = await db.education.find_many(
+        where={"user_id": uid}, order={"end_date": "desc"}
+    )
+    return [EducationOut(**e.__dict__) for e in educations]
+
+
+async def _create_resource_urls(
+    db: Prisma, source_id: int, source_type: str, urls: List[ResourceURLIn]
+) -> None:
+    """Create resource URLs for a given source."""
+    await db.resourceurl.delete_many(
+        where={"source_id": source_id, "source_type": source_type}
+    )
+
+    for url in urls:
+        await db.resourceurl.create(
+            data={
+                "source_id": source_id,
+                "source_type": source_type,
+                "label": url.label,
+                "url": url.url,
+            }
+        )
