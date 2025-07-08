@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr
@@ -13,7 +12,7 @@ class UserProfile(BaseModel):
     img: Optional[str]
     address: Optional[str]
     phone: Optional[str]
-    updated_at: datetime
+    updated_at: str
 
 
 class UserProfileUpdate(BaseModel):

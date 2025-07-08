@@ -40,7 +40,7 @@ async def get_user_profile_by_uid(uid: str) -> UserProfile:
             full_name=user.full_name,
             address=user.address,
             phone=user.phone,
-            updated_at=user.updated_at,
+            updated_at=str(user.updated_at),
         )
 
 
