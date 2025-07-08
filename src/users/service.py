@@ -40,7 +40,7 @@ async def get_user_profile_by_uid(uid: str) -> UserProfile:
             full_name=user.full_name,
             address=user.address,
             phone=user.phone,
-            updated_at=user.updated_at,
+            updated_at=str(user.updated_at),
         )
 
 
@@ -93,7 +93,7 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
                 img=user.img,
                 address=user.address,
                 phone=user.phone,
-                updated_at=user.updated_at,
+                updated_at=str(user.updated_at),
             )
 
         updated_user = await db.user.update(where={"uid": uid}, data=update_data)
@@ -105,5 +105,5 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
             img=updated_user.img,
             address=updated_user.address,
             phone=updated_user.phone,
-            updated_at=updated_user.updated_at,
+            updated_at=str(updated_user.updated_at),
         )

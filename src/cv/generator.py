@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+from logging import getLogger
 
 import requests
 from jinja2 import Environment, FileSystemLoader
@@ -9,8 +11,59 @@ from src.education.schemas import EducationOut
 from src.users.schemas import UserProfile
 
 TEMPLATE_DIR = "src/cv/templates"
-TEMPLATE_FILE = "template.tex"
-RESUME_CLS_FILE = "resume.cls"
+TEMPLATE_TEX_FILE = "template.tex"
+TEMPLATE_HTML_FILE = "template.html"
+LATEX_API_URL = "https://latex.ytotech.com/builds/sync"
+
+logger = getLogger(__name__)
+
+
+def format_date(value: str, fmt: str = "%b %Y") -> str:
+    """Formats a date string into the specified format."""
+    return datetime.fromisoformat(value).strftime(fmt)
+
+
+def create_jinja_environment(template: int) -> Environment:
+    """Creates and configures a Jinja2 environment."""
+    env = Environment(
+        loader=FileSystemLoader(os.path.join(TEMPLATE_DIR, str(template))),
+        block_start_string="((*",
+        block_end_string="*))",
+        variable_start_string="(((",
+        variable_end_string=")))",
+        comment_start_string="((#",
+        comment_end_string="#))",
+        autoescape=True,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    env.filters["format_date"] = format_date
+    return env
+
+
+def render_template(
+    template_file: str,
+    user: UserProfile,
+    educations: list[EducationOut],
+    experiences: list[ExperienceIn],
+    projects: list[ProjectIn],
+    technical_skills: list[TechnicalSkillIn],
+    publications: list[PublicationIn],
+    certificates: list[CertificateOut],
+    template: int,
+) -> str:
+    """Renders a template with the provided data."""
+    env = create_jinja_environment(template)
+    tpl = env.get_template(template_file)
+    return tpl.render(
+        user=user,
+        educations=educations,
+        experiences=experiences,
+        projects=projects,
+        technical_skills=technical_skills,
+        publications=publications,
+        certificates=certificates,
+    )
 
 
 def render_resume_latex(
@@ -23,46 +76,53 @@ def render_resume_latex(
     certificates: list[CertificateOut],
     template: int,
 ) -> str:
-    env = Environment(
-        loader=FileSystemLoader(os.path.join(TEMPLATE_DIR, str(template))),
-        block_start_string="((*",
-        block_end_string="*))",
-        variable_start_string="(((",
-        variable_end_string=")))",
-        comment_start_string="((#",
-        comment_end_string="#))",
-        autoescape=True,
-    )
-    tpl = env.get_template(TEMPLATE_FILE)
-    return tpl.render(
-        user=user,
-        educations=educations,
-        experiences=experiences,
-        projects=projects,
-        technical_skills=technical_skills,
-        publications=publications,
-        certificates=certificates,
+    """Renders a LaTeX resume."""
+    return render_template(
+        TEMPLATE_TEX_FILE,
+        user,
+        educations,
+        experiences,
+        projects,
+        technical_skills,
+        publications,
+        certificates,
+        template,
     )
 
 
-def compile_latex_remotely(latex_code: str, template: int) -> bytes:
-    resume_cls_path = os.path.join(TEMPLATE_DIR, str(template), RESUME_CLS_FILE)
-    with open(resume_cls_path, "r") as f:
-        resume_cls_content = f.read()
+def render_resume_html(
+    user: UserProfile,
+    educations: list[EducationOut],
+    experiences: list[ExperienceIn],
+    projects: list[ProjectIn],
+    technical_skills: list[TechnicalSkillIn],
+    publications: list[PublicationIn],
+    certificates: list[CertificateOut],
+    template: int,
+) -> str:
+    """Renders an HTML resume."""
+    return render_template(
+        TEMPLATE_HTML_FILE,
+        user,
+        educations,
+        experiences,
+        projects,
+        technical_skills,
+        publications,
+        certificates,
+        template,
+    )
 
-    url = "https://latex.ytotech.com/builds/sync"
 
+def compile_latex_remotely(latex_code: str) -> bytes:
+    """Compiles LaTeX code remotely using an API."""
     payload = {
         "compiler": "pdflatex",
-        "resources": [
-            {"main": True, "content": latex_code},
-            {"path": "resume.cls", "content": resume_cls_content},
-        ],
+        "resources": [{"main": True, "content": latex_code}],
     }
 
-    response = requests.post(url, json=payload)
+    response = requests.post(LATEX_API_URL, json=payload)
 
     if response.status_code != 201:
         raise RuntimeError(f"LaTeX API error: {response.status_code}")
-
     return response.content

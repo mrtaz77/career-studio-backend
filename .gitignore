@@ -6,6 +6,10 @@ secrets/
 files/
 setup_data.json
 
+# Latex
+*.aux
+*.fdb_latexmk
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

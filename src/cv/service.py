@@ -5,6 +5,7 @@ from typing import List
 from uuid import uuid4
 
 import redis.asyncio as aioredis
+from fastapi.encoders import jsonable_encoder
 from supabase import Client
 
 from src.certificate.schemas import CertificateOut
@@ -17,7 +18,11 @@ from src.cv.exceptions import (
     CVNotFoundException,
     CVSaveException,
 )
-from src.cv.generator import compile_latex_remotely, render_resume_latex
+from src.cv.generator import (
+    compile_latex_remotely,
+    render_resume_html,
+    render_resume_latex,
+)
 from src.cv.schemas import (
     CVAutoSaveRequest,
     CVFullOut,
@@ -153,19 +158,7 @@ async def process_publications(
 async def process_publication_details(
     db: Prisma, pub_id: int, publication: PublicationIn
 ) -> None:
-    await db.resourceurl.delete_many(
-        where={"source_id": pub_id, "source_type": "publication"}
-    )
-
-    for url in publication.urls:
-        await db.resourceurl.create(
-            data={
-                "source_id": pub_id,
-                "source_type": "publication",
-                "label": url.label,
-                "url": url.url,
-            }
-        )
+    await _create_resource_urls(db, pub_id, "publication", publication.urls)
 
 
 async def process_technical_skills(
@@ -197,24 +190,13 @@ async def process_projects(db: Prisma, cv_id: int, projects: List[ProjectIn]) ->
 
 async def process_project_details(db: Prisma, proj_id: int, project: ProjectIn) -> None:
     await db.projecttechnology.delete_many(where={"project_id": proj_id})
-    await db.resourceurl.delete_many(
-        where={"source_id": proj_id, "source_type": "project"}
-    )
 
     for tech in project.technologies:
         await db.projecttechnology.create(
             data={"project_id": proj_id, "technology": tech.technology}
         )
 
-    for url in project.urls:
-        await db.resourceurl.create(
-            data={
-                "source_id": proj_id,
-                "source_type": "project",
-                "label": url.label,
-                "url": url.url,
-            }
-        )
+    await _create_resource_urls(db, proj_id, "project", project.urls)
 
 
 def build_cv_out(updated_cv: models.CV, version: int) -> CVOut:
@@ -425,97 +407,31 @@ async def process_cv_generation(
         if not force_regenerate and cv.pdf_url:
             return generate_signed_url(supabase, cv.pdf_url, STORAGE_BUCKET)
 
-        user = await db.user.find_unique(where={"uid": uid})
-        educations = await db.education.find_many(where={"user_id": uid})
-        exp_links = await db.cv_experience.find_many(
-            where={"cv_id": payload.cv_id}, include={"experience": True}
+        user_out, certificates_out = await _fetch_user_and_certificates(
+            db, supabase, uid
         )
-        experiences = [link.experience for link in exp_links]
 
-        user_out = UserProfile(**user.__dict__)
-        educations_out = [EducationOut(**e.__dict__) for e in educations]
-        experiences_out = [ExperienceIn(**e.__dict__) for e in experiences]
-        projects = await db.cv_project.find_many(
-            where={"cv_id": payload.cv_id}, include={"project": True}
-        )
-        projects_out = [
-            ProjectIn(
-                id=p.project.id,
-                name=p.project.name,
-                description=p.project.description,
-                technologies=[
-                    ProjectTechnologyIn(id=t.id, technology=t.technology)
-                    for t in await db.projecttechnology.find_many(
-                        where={"project_id": p.project.id}
-                    )
-                ],
-                urls=[
-                    ResourceURLIn(
-                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
-                    )
-                    for u in await db.resourceurl.find_many(
-                        where={"source_id": p.project.id, "source_type": "project"}
-                    )
-                ],
-            )
-            for p in projects
-        ]
-        technical_skills = await db.cv_technicalskill.find_many(
-            where={"cv_id": payload.cv_id}, include={"technical_skill": True}
-        )
-        technical_skills_out = [
-            TechnicalSkillIn(**ts.technical_skill.__dict__) for ts in technical_skills
-        ]
-        publications = await db.cv_publication.find_many(
-            where={"cv_id": payload.cv_id}, include={"publication": True}
-        )
-        publications_out = [
-            PublicationIn(
-                id=p.publication.id,
-                title=p.publication.title,
-                journal=p.publication.journal,
-                year=p.publication.year,
-                urls=[
-                    ResourceURLIn(
-                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
-                    )
-                    for u in await db.resourceurl.find_many(
-                        where={
-                            "source_id": p.publication.id,
-                            "source_type": "publication",
-                        }
-                    )
-                ],
-            )
-            for p in publications
-        ]
-        certificates = await db.certification.find_many(where={"user_id": uid})
-        certificates_out = [
-            CertificateOut(
-                id=c.id,
-                title=c.title,
-                issuer=c.issuer,
-                issued_date=c.issued_date,
-                link=generate_signed_url(
-                    supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
-                ),
-            )
-            for c in certificates
-        ]
+        # Use content directly from payload
+        draft = payload.draft_content
+        educations_out = await _fetch_educations(db, uid)
 
         latex_code = render_resume_latex(
             user_out,
             educations_out,
-            experiences_out,
-            projects_out,
-            technical_skills_out,
-            publications_out,
+            sorted(draft.experiences, key=lambda e: e.end_date, reverse=True),
+            draft.projects,
+            draft.technical_skills,
+            draft.publications,
             certificates_out,
             1,
         )
-        pdf_bytes = compile_latex_remotely(latex_code, 1)
 
+        pdf_bytes = compile_latex_remotely(latex_code)
         path = upload_pdf_bytes_to_supabase(supabase, uid, pdf_bytes, STORAGE_BUCKET)
+
+        if cv.pdf_url:
+            supabase.storage.from_(STORAGE_BUCKET).remove([cv.pdf_url])
+
         await db.cv.update(where={"id": payload.cv_id}, data={"pdf_url": path})
 
         return generate_signed_url(supabase, path, STORAGE_BUCKET)
@@ -541,3 +457,87 @@ async def list_of_cvs(uid: str) -> list[CVListOut]:
             )
             for cv in cvs
         ]
+
+
+async def render_cv(uid: str, payload: CVAutoSaveRequest) -> str:
+    async with get_db() as db, get_supabase() as supabase:
+        # Validate CV access
+        await validate_cv_ownership(db, uid, payload.cv_id)
+
+        # Fetch user and certificates
+        user_out, certificates_out = await _fetch_user_and_certificates(
+            db, supabase, uid
+        )
+
+        # Use draft content from payload
+        draft = payload.draft_content
+
+        # Fetch education from DB
+        educations_out = await _fetch_educations(db, uid)
+
+        # Render to HTML (as string)
+        html = render_resume_html(
+            user_out,
+            educations_out,
+            sorted(draft.experiences, key=lambda e: e.end_date, reverse=True),
+            draft.projects,
+            draft.technical_skills,
+            draft.publications,
+            certificates_out,
+            1,
+        )
+
+        return html
+
+
+async def _fetch_user_and_certificates(
+    db: Prisma, supabase: Client, uid: str
+) -> tuple[UserProfile, List[CertificateOut]]:
+    """Fetch user profile and certificates for CV generation."""
+    user = await db.user.find_unique(where={"uid": uid})
+    certificates = await db.certification.find_many(
+        where={"user_id": uid}, order={"issued_date": "desc"}
+    )
+
+    user_out = UserProfile(**jsonable_encoder(user))
+    certificates_out = [
+        CertificateOut(
+            id=c.id,
+            title=c.title,
+            issuer=c.issuer,
+            issued_date=str(c.issued_date),
+            link=generate_signed_url(
+                supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
+            ),
+        )
+        for c in certificates
+    ]
+
+    return user_out, certificates_out
+
+
+async def _fetch_educations(db: Prisma, uid: str) -> List[EducationOut]:
+    """Fetch and transform education data for CV generation."""
+    educations = await db.education.find_many(
+        where={"user_id": uid}, order={"end_date": "desc"}
+    )
+    return [EducationOut(**e.__dict__) for e in educations]
+
+
+async def _create_resource_urls(
+    db: Prisma, source_id: int, source_type: str, urls: List[ResourceURLIn]
+) -> None:
+    """Create resource URLs for a given source."""
+    await db.resourceurl.delete_many(
+        where={"source_id": source_id, "source_type": source_type}
+    )
+
+    for url in urls:
+        await db.resourceurl.create(
+            data={
+                "source_id": source_id,
+                "source_type": source_type,
+                "label": url.label,
+                "url": url.url,
+            }
+        )

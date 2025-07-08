@@ -25,6 +25,7 @@ from src.cv.service import (
     get_cv_details,
     list_of_cvs,
     process_cv_generation,
+    render_cv,
     save_cv_version,
 )
 
@@ -136,3 +137,24 @@ async def generate_cv_endpoint(
     except Exception:
         logger.exception("Failed to generate CV file")
         raise HTTPException(status_code=500, detail="Failed to generate CV PDF")
+
+
+@router.post(
+    "/render",
+    summary="Render CV in HTML format",
+    status_code=status.HTTP_200_OK,
+)
+async def render_cv_endpoint(
+    request: Request, payload: CVAutoSaveRequest
+) -> dict[str, str]:
+    try:
+        uid = request.state.user.get("uid", "")
+        html_content = await render_cv(uid, payload)
+        return {"html_content": html_content}
+    except CVNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except Exception:
+        logger.exception("Failed to render CV in HTML format")
+        raise HTTPException(
+            status_code=500, detail="Failed to render CV in HTML format"
+        )
