@@ -33,7 +33,7 @@ def create_jinja_environment(template: int) -> Environment:
         variable_end_string=")))",
         comment_start_string="((#",
         comment_end_string="#))",
-        autoescape=False,
+        autoescape=True,
         trim_blocks=True,
         lstrip_blocks=True,
     )
