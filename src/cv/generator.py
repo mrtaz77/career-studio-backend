@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from logging import getLogger
 
 import requests
 from jinja2 import Environment, FileSystemLoader
@@ -13,6 +14,8 @@ TEMPLATE_DIR = "src/cv/templates"
 TEMPLATE_TEX_FILE = "template.tex"
 TEMPLATE_HTML_FILE = "template.html"
 LATEX_API_URL = "https://latex.ytotech.com/builds/sync"
+
+logger = getLogger(__name__)
 
 
 def format_date(value: str, fmt: str = "%b %Y") -> str:
@@ -30,7 +33,9 @@ def create_jinja_environment(template: int) -> Environment:
         variable_end_string=")))",
         comment_start_string="((#",
         comment_end_string="#))",
-        autoescape=True,
+        autoescape=False,
+        trim_blocks=True,
+        lstrip_blocks=True,
     )
     env.filters["format_date"] = format_date
     return env

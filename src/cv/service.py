@@ -5,6 +5,7 @@ from typing import List
 from uuid import uuid4
 
 import redis.asyncio as aioredis
+from fastapi.encoders import jsonable_encoder
 from supabase import Client
 
 from src.certificate.schemas import CertificateOut
@@ -19,8 +20,8 @@ from src.cv.exceptions import (
 )
 from src.cv.generator import (
     compile_latex_remotely,
-    render_resume_latex,
     render_resume_html,
+    render_resume_latex,
 )
 from src.cv.schemas import (
     CVAutoSaveRequest,
@@ -41,7 +42,6 @@ from src.education.schemas import EducationOut
 from src.prisma_client import Prisma, models
 from src.users.schemas import UserProfile
 from src.util import serialize_for_json, to_datetime
-from fastapi.encoders import jsonable_encoder
 
 logger = getLogger(__name__)
 REDIS_AUTOSAVE_PREFIX = "autosave:cv:"
@@ -469,6 +469,9 @@ async def process_cv_generation(
 
         pdf_bytes = compile_latex_remotely(latex_code)
         path = upload_pdf_bytes_to_supabase(supabase, uid, pdf_bytes, STORAGE_BUCKET)
+
+        if cv.pdf_url:
+            supabase.storage.from_(STORAGE_BUCKET).remove([cv.pdf_url])
 
         await db.cv.update(where={"id": payload.cv_id}, data={"pdf_url": path})
 

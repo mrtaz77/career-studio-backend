@@ -120,53 +120,45 @@
 %----------------------------------------------------------------------------------------
 \begin{rSection}{EDUCATION}
 ((* for edu in educations *))
-    \textbf{((( edu.institution )))} \hfill \textbf{((( edu.location )))} \\
-    \textit{((( edu.degree )))} \hfill \textit{((( edu.start_date.strftime("%b %Y") ))) -- ((( edu.end_date.strftime("%b %Y") ))) } \\
-    \textbf{GPA:} ((( edu.gpa ))) ((* if edu.honors *)) \textbf{Honors:} ((( edu.honors ))) ((* endif *))
+\textbf{((( edu.institution )))} \hfill \textbf{((( edu.location )))} \\
+\textit{((( edu.degree )))} \hfill \textit{((( edu.start_date.strftime("%b %Y") ))) -- ((( edu.end_date.strftime("%b %Y") ))) } \\
+\textbf{GPA:} ((( edu.gpa ))) ((* if edu.honors *)) \textbf{Honors:} ((( edu.honors ))) ((* endif *))
+((* if not loop.last *))\newline((* endif *))
 ((* endfor *))
 \end{rSection}
-
 %----------------------------------------------------------------------------------------
 % EXPERIENCE
 %----------------------------------------------------------------------------------------
 \begin{rSection}{EXPERIENCE}
 ((* for exp in experiences *))
-    \textbf{((( exp.position )))} — \href{((( exp.company_url )))}{((( exp.company )))} \hfill ((( exp.location ))) \\
-    \textit{((( exp.job_title )))} ((( "(" + exp.employment_type + ")" ))) \hfill ((( exp.start_date.strftime("%b %Y") ))) -- ((( exp.end_date.strftime("%b %Y") ))) \\
-    \textbf{Industry:} ((( exp.industry ))) \\
-
-    \begin{itemize} \setlength{\itemsep}{-5pt}
-    ((* for line in exp.description.split('\n') *))
-        \item ((( line ))) \\
-    ((* endfor *))
-    \end{itemize}
-
+\textbf{((( exp.position )))} — \href{((( exp.company_url )))}{((( exp.company )))} \hfill \textbf{((( exp.location )))} \\
+\textit{((( exp.job_title ))) ((( "(" + exp.employment_type + ")" )))} \hfill \textit{((( exp.start_date.strftime("%b %Y") ))) -- ((( exp.end_date.strftime("%b %Y") )))} \\
+\textbf{Industry:} ((( exp.industry )))
+\vspace{-6pt}
+\begin{itemize}
+((* for line in exp.description.split('\n') *))
+\item ((( line )))
+((* endfor *))
+\end{itemize}
 ((* endfor *))
 \end{rSection}
-
 %----------------------------------------------------------------------------------------
 % PROJECTS
 %----------------------------------------------------------------------------------------
 \begin{rSection}{PROJECTS}
 ((* for proj in projects *))
-    \textbf{((( proj.name )))} \(|\) 
-    \textit{((( proj.technologies | map(attribute='technology') | join(', ') )))} 
-    ((* if proj.urls *)) \(|\) 
-        ((* for url in proj.urls *))
-            \href{((( url.url )))}{\textit{((( url.label )))}} 
-        ((* endfor *))
-    ((* endif *))
-
-\vspace{-5pt}
-\begin{itemize} \setlength{\itemsep}{-5pt}
+\textbf{((( proj.name )))} \(|\) \textit{((( proj.technologies | map(attribute='technology') | join(', ') )))} \(|\) 
+((* for url in proj.urls *))
+    \href{((( url.url ))) }{\textit{((( url.label )))}}%((* if not loop.last *)),\;((* endif *))
+((* endfor *))
+\vspace{-6pt}
+\begin{itemize}
 ((* for line in proj.description.split('\n') *))
-    \item ((( line )))
+\item ((( line )))
 ((* endfor *))
 \end{itemize}
-
 ((* endfor *))
 \end{rSection}
-
 %----------------------------------------------------------------------------------------
 % SKILLS
 %----------------------------------------------------------------------------------------
@@ -179,16 +171,14 @@
 \end{tabular}\\
 
 \end{rSection}
-
 %----------------------------------------------------------------------------------------
 % PUBLICATIONS
 %----------------------------------------------------------------------------------------
 \begin{rSection}{PUBLICATIONS}
-\begin{itemize} \setlength{\itemsep}{-5pt}
+\begin{itemize}
 ((* for pub in publications *))
     \item \textit{((( pub.title )))}, \textbf{((( pub.journal )))}, ((( pub.year )))
-    ((* if pub.urls *))
-        \textit{Links:}
+    ((* if pub.urls *)) \newline
         ((* for url in pub.urls *))
             \href{((( url.url )))}{((( url.label )))}\ 
         ((* endfor *))
@@ -201,7 +191,7 @@
 % CERTIFICATIONS
 %----------------------------------------------------------------------------------------
 \begin{rSection}{CERTIFICATIONS}
-\begin{itemize} \setlength{\itemsep}{-5pt}
+\begin{itemize}
 ((* for cert in certificates *))
     \item \textbf{((( cert.title )))}, ((( cert.issuer ))) — ((( cert.issued_date|format_date )))
     \newline \href{((( cert.link )))}{\textit{View Certificate}}
