@@ -1,4 +1,107 @@
-\documentclass{resume}
+\documentclass[11pt,letterpaper]{article}
+
+% --- Begin resume.cls content ---
+
+\usepackage[parfill]{parskip} % Remove paragraph indentation
+\usepackage{array} % Required for boldface tabular columns
+\usepackage{ifthen} % For ifthenelse statements
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+
+\pagestyle{empty} % Suppress page numbers
+
+% Headings commands
+\makeatletter
+\def \name#1{\def\@name{#1}} % Defines \name command
+\def \@name {} % Default empty
+
+\def \addressSep {$\diamond$} % Address separator
+
+\let \@addressone \relax
+\let \@addresstwo \relax
+\let \@addressthree \relax
+
+\def \address #1{
+  \@ifundefined{@addresstwo}{
+    \def \@addresstwo {#1}
+  }{
+  \@ifundefined{@addressthree}{
+  \def \@addressthree {#1}
+  }{
+     \def \@addressone {#1}
+  }}
+}
+
+\def \printaddress #1{
+  \begingroup
+    \def \\ {\addressSep\ }
+    \centerline{#1}
+  \endgroup
+  \par
+  \addressskip
+}
+
+\def \printname {
+  \begingroup
+    \hfil{\MakeUppercase{\namesize\bfseries \@name}}\hfil
+    \nameskip\break
+  \endgroup
+}
+
+% Redefine \document to print name and addresses
+\let\ori@document=\document
+\renewcommand{\document}{
+  \ori@document
+  \printname
+  \@ifundefined{@addressone}{}{\printaddress{\@addressone}}
+  \@ifundefined{@addresstwo}{}{\printaddress{\@addresstwo}}
+  \@ifundefined{@addressthree}{}{\printaddress{\@addressthree}}
+}
+\makeatother
+
+% Section formatting
+\newenvironment{rSection}[1]{%
+  \sectionskip
+  \MakeUppercase{{\bfseries #1}}%
+  \sectionlineskip
+  \hrule
+  \begin{list}{}{%
+    \setlength{\leftmargin}{0em}%
+  }
+  \item[]
+}{%
+  \end{list}
+}
+
+% Work experience formatting
+\newenvironment{rSubsection}[4]{%
+ {\bfseries #1} \hfill {#2}%
+ \ifthenelse{\equal{#3}{}}{}{%
+  \\%
+  {\em #3} \hfill {\em #4}%
+  }%
+  \smallskip
+  \begin{list}{$\cdot$}{\leftmargin=0em}%
+   \itemsep -0.5em \vspace{-0.5em}%
+  }{%
+  \end{list}
+  \vspace{0.5em}%
+}
+
+% Whitespace commands
+\def\namesize{\LARGE} % Name size
+\def\addressskip{\smallskip} % Space between addresses
+\def\sectionlineskip{\medskip} % Space above section line
+\def\nameskip{\medskip} % Space after name
+\def\sectionskip{\medskip} % Space after section heading
+
+% --- End resume.cls content ---
 
 \usepackage{enumerate, enumitem}
 \usepackage{graphicx}
@@ -19,7 +122,7 @@
 ((* for edu in educations *))
     \textbf{((( edu.institution )))} \hfill \textbf{((( edu.location )))} \\
     \textit{((( edu.degree )))} \hfill \textit{((( edu.start_date.strftime("%b %Y") ))) -- ((( edu.end_date.strftime("%b %Y") ))) } \\
-    \textbf{GPA:} ((( edu.gpa ))) ((* if edu.honors *)) \hfill \textbf{Honors:} ((( edu.honors ))) ((* endif *))
+    \textbf{GPA:} ((( edu.gpa ))) ((* if edu.honors *)) \textbf{Honors:} ((( edu.honors ))) ((* endif *))
 ((* endfor *))
 \end{rSection}
 
