@@ -41,12 +41,16 @@ async def init_db() -> None:
 
 
 async def close_db() -> None:
+    """
+    Close the database connection safely.
+    """
     try:
         if prisma.is_connected():
             await prisma.disconnect()
+            logger.info("Database connection closed successfully")
     except Exception as e:
         logger.error(f"Error disconnecting from database: {e}", exc_info=True)
-        raise
+        # Don't re-raise during cleanup - just log the error
 
 
 def init_redis_cache() -> None:
@@ -86,8 +90,21 @@ def init_supabase() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    await init_db()
-    init_redis_cache()
-    init_supabase()
-    yield
-    await close_db()
+    """
+    Application lifespan context manager.
+    Handles startup and shutdown of database and cache connections.
+    """
+    try:
+        # Startup
+        await init_db()
+        init_redis_cache()
+        init_supabase()
+        logger.info("Application startup complete")
+        yield
+    finally:
+        # Shutdown - ensure cleanup happens even if there are errors
+        try:
+            await close_db()
+            logger.info("Application shutdown complete")
+        except Exception as e:
+            logger.error(f"Error during application shutdown: {e}", exc_info=True)

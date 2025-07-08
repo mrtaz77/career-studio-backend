@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import Awaitable, Callable
 
-from fastapi import HTTPException, Request, Response
+from fastapi import Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -17,6 +17,11 @@ from src.auth.constants import (
 from src.firebase import auth, verify_token
 
 logger = getLogger(__name__)
+
+# Constants for response formatting
+JSON_MEDIA_TYPE = "application/json"
+ERROR_DETAIL_PREFIX = '{"detail":"'
+ERROR_DETAIL_SUFFIX = '"}'
 
 security = HTTPBearer(auto_error=False)
 
@@ -102,7 +107,13 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
             auth_header = request.headers.get("Authorization")
             if not auth_header:
                 logger.warning(AUTH_HEADER_MISSING)
-                raise HTTPException(status_code=401, detail=AUTH_HEADER_MISSING)
+                return Response(
+                    content=ERROR_DETAIL_PREFIX
+                    + AUTH_HEADER_MISSING
+                    + ERROR_DETAIL_SUFFIX,
+                    status_code=401,
+                    media_type=JSON_MEDIA_TYPE,
+                )
 
             # Remove 'Bearer ' prefix if present
             token = auth_header.replace("Bearer ", "")
@@ -118,10 +129,20 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
 
         except ValueError:
             logger.warning(INVALID_TOKEN)
-            raise HTTPException(status_code=401, detail=INVALID_TOKEN)
+            return Response(
+                content=ERROR_DETAIL_PREFIX + INVALID_TOKEN + ERROR_DETAIL_SUFFIX,
+                status_code=401,
+                media_type=JSON_MEDIA_TYPE,
+            )
         except Exception as e:
             logger.error(f"{TOKEN_VERIFICATION_ERROR}: {str(e)}")
-            raise HTTPException(status_code=401, detail=TOKEN_VERIFICATION_ERROR)
+            return Response(
+                content=ERROR_DETAIL_PREFIX
+                + TOKEN_VERIFICATION_ERROR
+                + ERROR_DETAIL_SUFFIX,
+                status_code=401,
+                media_type=JSON_MEDIA_TYPE,
+            )
 
 
 async def validation_exception_handler(request: Request, exc: Exception) -> Response:
