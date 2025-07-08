@@ -17,7 +17,11 @@ from src.cv.exceptions import (
     CVNotFoundException,
     CVSaveException,
 )
-from src.cv.generator import compile_latex_remotely, render_resume_latex
+from src.cv.generator import (
+    compile_latex_remotely,
+    render_resume_latex,
+    render_resume_html,
+)
 from src.cv.schemas import (
     CVAutoSaveRequest,
     CVFullOut,
@@ -37,6 +41,7 @@ from src.education.schemas import EducationOut
 from src.prisma_client import Prisma, models
 from src.users.schemas import UserProfile
 from src.util import serialize_for_json, to_datetime
+from fastapi.encoders import jsonable_encoder
 
 logger = getLogger(__name__)
 REDIS_AUTOSAVE_PREFIX = "autosave:cv:"
@@ -426,70 +431,11 @@ async def process_cv_generation(
             return generate_signed_url(supabase, cv.pdf_url, STORAGE_BUCKET)
 
         user = await db.user.find_unique(where={"uid": uid})
-        educations = await db.education.find_many(where={"user_id": uid})
-        exp_links = await db.cv_experience.find_many(
-            where={"cv_id": payload.cv_id}, include={"experience": True}
+        certificates = await db.certification.find_many(
+            where={"user_id": uid}, order={"issued_date": "desc"}
         )
-        experiences = [link.experience for link in exp_links]
 
-        user_out = UserProfile(**user.__dict__)
-        educations_out = [EducationOut(**e.__dict__) for e in educations]
-        experiences_out = [ExperienceIn(**e.__dict__) for e in experiences]
-        projects = await db.cv_project.find_many(
-            where={"cv_id": payload.cv_id}, include={"project": True}
-        )
-        projects_out = [
-            ProjectIn(
-                id=p.project.id,
-                name=p.project.name,
-                description=p.project.description,
-                technologies=[
-                    ProjectTechnologyIn(id=t.id, technology=t.technology)
-                    for t in await db.projecttechnology.find_many(
-                        where={"project_id": p.project.id}
-                    )
-                ],
-                urls=[
-                    ResourceURLIn(
-                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
-                    )
-                    for u in await db.resourceurl.find_many(
-                        where={"source_id": p.project.id, "source_type": "project"}
-                    )
-                ],
-            )
-            for p in projects
-        ]
-        technical_skills = await db.cv_technicalskill.find_many(
-            where={"cv_id": payload.cv_id}, include={"technical_skill": True}
-        )
-        technical_skills_out = [
-            TechnicalSkillIn(**ts.technical_skill.__dict__) for ts in technical_skills
-        ]
-        publications = await db.cv_publication.find_many(
-            where={"cv_id": payload.cv_id}, include={"publication": True}
-        )
-        publications_out = [
-            PublicationIn(
-                id=p.publication.id,
-                title=p.publication.title,
-                journal=p.publication.journal,
-                year=p.publication.year,
-                urls=[
-                    ResourceURLIn(
-                        id=u.id, label=u.label, url=u.url, source_type=u.source_type
-                    )
-                    for u in await db.resourceurl.find_many(
-                        where={
-                            "source_id": p.publication.id,
-                            "source_type": "publication",
-                        }
-                    )
-                ],
-            )
-            for p in publications
-        ]
-        certificates = await db.certification.find_many(where={"user_id": uid})
+        user_out = UserProfile(**jsonable_encoder(user))
         certificates_out = [
             CertificateOut(
                 id=c.id,
@@ -503,19 +449,27 @@ async def process_cv_generation(
             for c in certificates
         ]
 
+        # Use content directly from payload
+        draft = payload.draft_content
+        educations = await db.education.find_many(
+            where={"user_id": uid}, order={"end_date": "desc"}
+        )
+        educations_out = [EducationOut(**e.__dict__) for e in educations]
+
         latex_code = render_resume_latex(
             user_out,
             educations_out,
-            experiences_out,
-            projects_out,
-            technical_skills_out,
-            publications_out,
+            sorted(draft.experiences, key=lambda e: e.end_date, reverse=True),
+            draft.projects,
+            draft.technical_skills,
+            draft.publications,
             certificates_out,
             1,
         )
-        pdf_bytes = compile_latex_remotely(latex_code, 1)
 
+        pdf_bytes = compile_latex_remotely(latex_code)
         path = upload_pdf_bytes_to_supabase(supabase, uid, pdf_bytes, STORAGE_BUCKET)
+
         await db.cv.update(where={"id": payload.cv_id}, data={"pdf_url": path})
 
         return generate_signed_url(supabase, path, STORAGE_BUCKET)
@@ -541,3 +495,52 @@ async def list_of_cvs(uid: str) -> list[CVListOut]:
             )
             for cv in cvs
         ]
+
+
+async def render_cv(uid: str, payload: CVAutoSaveRequest) -> str:
+    async with get_db() as db, get_supabase() as supabase:
+        # Validate CV access
+        await validate_cv_ownership(db, uid, payload.cv_id)
+
+        # Fetch user and certificates
+        user = await db.user.find_unique(where={"uid": uid})
+        certificates = await db.certification.find_many(
+            where={"user_id": uid}, order={"issued_date": "desc"}
+        )
+
+        user_out = UserProfile(**jsonable_encoder(user))
+        certificates_out = [
+            CertificateOut(
+                id=c.id,
+                title=c.title,
+                issuer=c.issuer,
+                issued_date=str(c.issued_date),
+                link=generate_signed_url(
+                    supabase, c.link, CERTIFICATE_STORAGE_BUCKET, 36000
+                ),
+            )
+            for c in certificates
+        ]
+
+        # Use draft content from payload
+        draft = payload.draft_content
+
+        # Fetch education from DB
+        educations = await db.education.find_many(
+            where={"user_id": uid}, order={"end_date": "desc"}
+        )
+        educations_out = [EducationOut(**e.__dict__) for e in educations]
+
+        # Render to HTML (as string)
+        html = render_resume_html(
+            user_out,
+            educations_out,
+            sorted(draft.experiences, key=lambda e: e.end_date, reverse=True),
+            draft.projects,
+            draft.technical_skills,
+            draft.publications,
+            certificates_out,
+            1,
+        )
+
+        return html
