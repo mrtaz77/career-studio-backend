@@ -22,6 +22,7 @@ from src.cv.schemas import (
 from src.cv.service import (
     autosave_cv,
     create_new_cv,
+    delete_cv,
     get_cv_details,
     list_of_cvs,
     process_cv_generation,
@@ -158,3 +159,19 @@ async def render_cv_endpoint(
         raise HTTPException(
             status_code=500, detail="Failed to render CV in HTML format"
         )
+
+
+@router.delete(
+    "/{cv_id}",
+    summary="Delete a CV",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_cv_endpoint(request: Request, cv_id: int) -> None:
+    try:
+        uid = request.state.user.get("uid", "")
+        await delete_cv(uid, cv_id)
+    except CVNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except Exception:
+        logger.exception("Failed to delete CV")
+        raise HTTPException(status_code=500, detail="Failed to delete CV")

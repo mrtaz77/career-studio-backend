@@ -72,7 +72,9 @@ async def save_cv_version(uid: str, payload: CVSaveRequest) -> CVOut:
     async with get_db() as db:
         await validate_cv_ownership(db, uid, payload.cv_id)
         version = await create_new_version(db, payload)
-        updated_cv = await update_cv(db, payload.cv_id, version.id)
+        updated_cv = await update_cv(
+            db, payload.cv_id, version.id, payload.save_content.title
+        )
         await clear_existing_links(db, payload.cv_id)
         await process_content(db, payload.cv_id, payload.save_content)
         await redis_client.delete(f"{REDIS_AUTOSAVE_PREFIX}{payload.cv_id}")
@@ -111,12 +113,13 @@ async def create_new_version(db: Prisma, payload: CVSaveRequest) -> models.CVVer
     )
 
 
-async def update_cv(db: Prisma, cv_id: int, version_id: int) -> models.CV:
+async def update_cv(db: Prisma, cv_id: int, version_id: int, title: str) -> models.CV:
     return await db.cv.update(
         where={"id": cv_id},
         data={
             "latest_saved_version_id": version_id,
             "is_draft": False,
+            "title": title,
         },
     )
 
@@ -541,3 +544,26 @@ async def _create_resource_urls(
                 "url": url.url,
             }
         )
+
+
+async def delete_cv(uid: str, cv_id: int) -> None:
+    async with get_db() as db:
+        cv = await validate_cv_ownership(db, uid, cv_id)
+        if not cv:
+            raise CVNotFoundException()
+
+        # Delete all related entities
+        await db.cv_experience.delete_many(where={"cv_id": cv_id})
+        await db.cv_publication.delete_many(where={"cv_id": cv_id})
+        await db.cv_technicalskill.delete_many(where={"cv_id": cv_id})
+        await db.cv_project.delete_many(where={"cv_id": cv_id})
+
+        # Delete the CV itself
+        await db.cv.delete(where={"id": cv_id})
+
+        # Remove PDF from storage if it exists
+        if cv.pdf_url:
+            async with get_supabase() as supabase:
+                supabase.storage.from_(STORAGE_BUCKET).remove([cv.pdf_url])
+
+        await db.cvversion.delete_many(where={"cv_id": cv_id})
