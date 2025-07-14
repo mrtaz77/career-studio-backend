@@ -465,7 +465,7 @@ async def list_of_cvs(uid: str) -> list[CVListOut]:
 async def render_cv(uid: str, payload: CVAutoSaveRequest) -> str:
     async with get_db() as db, get_supabase() as supabase:
         # Validate CV access
-        await validate_cv_ownership(db, uid, payload.cv_id)
+        cv = await validate_cv_ownership(db, uid, payload.cv_id)
 
         # Fetch user and certificates
         user_out, certificates_out = await _fetch_user_and_certificates(
@@ -487,7 +487,7 @@ async def render_cv(uid: str, payload: CVAutoSaveRequest) -> str:
             draft.technical_skills,
             draft.publications,
             certificates_out,
-            1,
+            cv.template,
         )
 
         return html
