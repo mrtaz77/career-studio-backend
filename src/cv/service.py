@@ -46,7 +46,7 @@ from src.util import serialize_for_json, to_datetime
 logger = getLogger(__name__)
 REDIS_AUTOSAVE_PREFIX = "autosave:cv:"
 STORAGE_BUCKET = "cvs"
-NUMBER_OF_CV_TEMPLATES = 1
+NUMBER_OF_CV_TEMPLATES = 2
 
 redis_client = aioredis.from_url(
     f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}", decode_responses=True
@@ -426,7 +426,7 @@ async def process_cv_generation(
             draft.technical_skills,
             draft.publications,
             certificates_out,
-            1,
+            cv.template,
         )
 
         pdf_bytes = compile_latex_remotely(latex_code)
