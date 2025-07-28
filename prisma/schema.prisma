@@ -196,6 +196,11 @@ model Portfolio {
   seo_meta         Json?
   created_at       DateTime                   @default(now())
   updated_at       DateTime                   @updatedAt
+  is_public        Boolean                    @default(false)
+  published_url    String?                    @unique
+  published_at     DateTime                   @default(now())
+  title            String
+  bio              String?
   user             User                       @relation(fields: [user_id], references: [uid])
   feedbacks        PortfolioFeedback[]
   experience       Portfolio_Experience[]
@@ -212,7 +217,7 @@ model PortfolioFeedback {
   rating        Int
   comment       String
   created_at    DateTime  @default(now())
-  portfolio     Portfolio @relation(fields: [portfolio_id], references: [id])
+  portfolio     Portfolio @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
   reviewer      User?     @relation("ReviewerFeedback", fields: [reviewer_id], references: [uid])
 }
 
@@ -220,7 +225,7 @@ model Portfolio_Experience {
   portfolio_id Int
   exp_id       Int
   experience   Experience @relation(fields: [exp_id], references: [id])
-  portfolio    Portfolio  @relation(fields: [portfolio_id], references: [id])
+  portfolio    Portfolio  @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
 
   @@id([portfolio_id, exp_id])
 }
@@ -229,7 +234,7 @@ model Portfolio_Project {
   portfolio_id  Int
   project_id    Int
   thumbnail_url String?
-  portfolio     Portfolio @relation(fields: [portfolio_id], references: [id])
+  portfolio     Portfolio @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
   project       Project   @relation(fields: [project_id], references: [id])
 
   @@id([portfolio_id, project_id])
@@ -238,7 +243,7 @@ model Portfolio_Project {
 model Portfolio_TechnicalSkill {
   portfolio_id    Int
   tech_skill_id   Int
-  portfolio       Portfolio      @relation(fields: [portfolio_id], references: [id])
+  portfolio       Portfolio      @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
   technical_skill TechnicalSkill @relation(fields: [tech_skill_id], references: [id])
 
   @@id([portfolio_id, tech_skill_id])
@@ -249,7 +254,7 @@ model Portfolio_Research {
   publication_id Int
   thumbnail_url  String?
   description    String?
-  portfolio      Portfolio   @relation(fields: [portfolio_id], references: [id])
+  portfolio      Portfolio   @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
   publication    Publication @relation(fields: [publication_id], references: [id])
 
   @@id([portfolio_id, publication_id])
