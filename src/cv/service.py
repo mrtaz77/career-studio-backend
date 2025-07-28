@@ -567,3 +567,32 @@ async def delete_cv(uid: str, cv_id: int) -> None:
                 supabase.storage.from_(STORAGE_BUCKET).remove([cv.pdf_url])
 
         await db.cvversion.delete_many(where={"cv_id": cv_id})
+
+
+async def search_cvs(
+    uid: str, title: str, _type: str, bookmark: bool
+) -> list[CVListOut]:
+    async with get_db() as db:
+        cvs = await db.cv.find_many(
+            where={
+                "user_id": uid,
+                "title": {"contains": title, "mode": "insensitive"},
+                "bookmark": bookmark,
+                "type": _type,
+            }
+        )
+
+        return [
+            CVListOut(
+                cv_id=cv.id,
+                title=cv.title,
+                template=cv.template,
+                latest_saved_version_id=cv.latest_saved_version_id,
+                version_number=(
+                    cv.latest_version.version_number if cv.latest_version else 0
+                ),
+                created_at=cv.created_at,
+                updated_at=cv.updated_at,
+            )
+            for cv in cvs
+        ]

@@ -4,13 +4,14 @@ import phonenumbers
 from phonenumbers.phonenumberutil import NumberParseException
 
 from src.auth.exceptions import UserNotFoundException
+from src.cv.schemas import ExperienceIn
 from src.database import get_db
 from src.users.exceptions import (
     InvalidPhoneNumberException,
     InvalidPhoneNumberFormatException,
     UsernameUnavailableException,
 )
-from src.users.schemas import UserProfile, UserProfileUpdate
+from src.users.schemas import OtherUsersProfile, UserProfile, UserProfileUpdate
 
 logger = getLogger(__name__)
 
@@ -107,3 +108,32 @@ async def update_user_profile(uid: str, update: UserProfileUpdate) -> UserProfil
             phone=updated_user.phone,
             updated_at=str(updated_user.updated_at),
         )
+
+
+async def other_user_profiles(uid: str) -> list[OtherUsersProfile]:
+    async with get_db() as db:
+        users = await db.user.find_many()
+        other_profiles = []
+        for user in users:
+            if uid == user.uid:
+                continue
+            _uid = user.uid
+            cvs = await db.cv.find_many(where={"user_id": _uid})
+            for cv in cvs:
+                exp_links = await db.cv_experience.find_many(
+                    where={"cv_id": cv.id}, include={"experience": True}
+                )
+                experiences = [
+                    ExperienceIn(**link.experience.__dict__) for link in exp_links
+                ]
+                for experience in experiences:
+                    user_profile = OtherUsersProfile(
+                        username=user.username,
+                        job_title=experience.job_title,
+                        company_name=experience.company,
+                        start_date=str(experience.start_date),
+                        end_date=str(experience.end_date),
+                    )
+                    if user_profile not in other_profiles:
+                        other_profiles.append(user_profile)
+        return other_profiles

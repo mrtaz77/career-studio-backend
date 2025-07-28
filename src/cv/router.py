@@ -3,7 +3,7 @@ from logging import getLogger
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
-from src.cv.constants import CV_AUTOSAVE_SUCCESS, CV_SAVE_FAILED
+from src.cv.constants import CV_AUTOSAVE_SUCCESS, CV_SAVE_FAILED, DEFAULT_CV_TYPE
 from src.cv.exceptions import (
     CVInvalidTemplateException,
     CVInvalidTypeException,
@@ -28,6 +28,7 @@ from src.cv.service import (
     process_cv_generation,
     render_cv,
     save_cv_version,
+    search_cvs,
 )
 
 router = APIRouter(tags=["CV"], prefix="/cv")
@@ -100,6 +101,18 @@ async def get_list_of_cvs(request: Request) -> list[CVListOut]:
     except Exception:
         logger.exception("Failed to get list of CV IDs")
         raise HTTPException(status_code=500, detail="Failed to get list of CV IDs")
+
+
+@router.get("/search", summary="Search for a cv", status_code=status.HTTP_200_OK)
+async def search_cv_by_params(
+    request: Request, title: str, type: str = DEFAULT_CV_TYPE, bookmark: bool = False
+) -> list[CVListOut]:
+    try:
+        uid = request.state.user.get("uid", "")
+        return await search_cvs(uid, title, type, bookmark)
+    except Exception as e:
+        logger.exception(f"Failed to search for cvs: {e}")
+        raise HTTPException(status_code=500, detail="Failed to search for cvs")
 
 
 @router.get(
