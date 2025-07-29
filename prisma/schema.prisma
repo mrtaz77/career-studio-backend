@@ -53,7 +53,7 @@ model Experience {
   position        String
   company         String
   company_url     String
-  company_logo    String
+  company_logo    String?
   location        String
   employment_type String
   location_type   String
