@@ -8,8 +8,12 @@ from src.users.exceptions import (
     InvalidPhoneNumberFormatException,
     UsernameUnavailableException,
 )
-from src.users.schemas import UserProfile, UserProfileUpdate
-from src.users.service import get_user_profile_by_uid, update_user_profile
+from src.users.schemas import OtherUsersProfile, UserProfile, UserProfileUpdate
+from src.users.service import (
+    get_user_profile_by_uid,
+    other_user_profiles,
+    update_user_profile,
+)
 
 logger = getLogger(__name__)
 
@@ -78,3 +82,16 @@ async def update_profile(
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except InvalidPhoneNumberFormatException as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
+
+
+@router.get("/others", summary="Other users profile", status_code=status.HTTP_200_OK)
+async def get_other_users(
+    request: Request,
+) -> list[OtherUsersProfile]:
+    try:
+        uid = request.state.user.get("uid", "")
+        return await other_user_profiles(uid)
+    except UserNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,202 +1,118 @@
-from datetime import datetime, timezone
-from typing import List, Optional
+from logging import getLogger
 
-from fastapi import APIRouter, Depends, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import JSONResponse
 
+from src.portfolio.exceptions import (
+    PortfolioInvalidThemeException,
+    PortfolioNotFoundException,
+)
 from src.portfolio.schemas import (
-    Achievement,
-    Experience,
-    PortfolioFromCVRequest,
-    Project,
-    SocialLink,
+    PortfolioCreateRequest,
+    PortfolioFullOut,
+    PortfolioListOut,
+    PortfolioOut,
+)
+from src.portfolio.service import (
+    create_new_portfolio,
+    get_portfolio_details,
+    list_of_portfolios,
+    update_portfolio,
 )
 
 router = APIRouter(tags=["Portfolio"], prefix="/portfolio")
-security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
+logger = getLogger(__name__)
 
 
-# === Schemas ===
-
-
-class PortfolioResponse(BaseModel):
-    id: int
-    slug: str
-    cv_id: Optional[int]
-    title: str
-    summary: Optional[str]
-    description: Optional[str]
-    theme: Optional[str]
-    published: bool
-    last_saved_at: datetime
-
-
-class PortfolioUpdateRequest(BaseModel):
-    title: Optional[str]
-    summary: Optional[str]
-    description: Optional[str]
-    theme: Optional[str]
-    published: Optional[bool]
-
-
-class PortfolioEditResponse(BaseModel):
-    title: str
-    summary: Optional[str]
-    theme: Optional[str]
-    achievements: Optional[List[Achievement]]
-    projects: Optional[List[Project]]
-    experiences: Optional[List[Experience]]
-    skills: Optional[List[str]]
-    social_links: Optional[List[SocialLink]]
-    last_saved_at: datetime
-
-
-# === Routes ===
-
-
-@router.post(
-    "/{portfolio_id}/publish",
-    summary="Publish an existing portfolio",
-    description="Marks the portfolio as published and generates a public slug.",
-    response_model=PortfolioResponse,
-)
-async def publish_existing_portfolio(
-    portfolio_id: int, _creds: HTTPAuthorizationCredentials = Depends(security)
-) -> PortfolioResponse:
-    return PortfolioResponse(
-        id=portfolio_id,
-        slug=f"portfolio-{portfolio_id}",
-        cv_id=None,
-        title="Published Portfolio",
-        summary="Ready to share",
-        description="Public view enabled",
-        theme="minimal",
-        published=True,
-        last_saved_at=datetime.now(timezone.utc),
-    )
-
-
-@router.post(
-    "/from-cv",
-    summary="Create portfolio from existing CV",
-    description="Creates a portfolio using an existing CV ID.",
-    response_model=PortfolioResponse,
-)
-async def create_portfolio_from_cv(
-    data: PortfolioFromCVRequest,
-    _creds: HTTPAuthorizationCredentials = Depends(security),
-) -> PortfolioResponse:
-    return PortfolioResponse(
-        id=101,
-        slug="cvport123",
-        cv_id=data.cv_id,
-        title=data.title or "My CV Portfolio",
-        summary=data.summary,
-        description=None,
-        theme=data.theme,
-        published=False,
-        last_saved_at=datetime.now(timezone.utc),
-    )
-
-
-@router.get(
-    "/{slug}",
-    summary="View a public portfolio",
-    description="Returns public portfolio data viewable by anyone.",
-    response_model=PortfolioResponse,
-)
-async def get_public_portfolio(slug: str) -> PortfolioResponse:
-    return PortfolioResponse(
-        id=1,
-        slug=slug,
-        cv_id=None,
-        title="Public Portfolio",
-        summary="Public summary",
-        description="My awesome portfolio",
-        theme="minimal",
-        published=True,
-        last_saved_at=datetime.now(timezone.utc),
-    )
-
-
-@router.get(
-    "/me",
-    summary="Get my portfolios",
-    description="Returns all portfolios owned by the authenticated user.",
-    response_model=List[PortfolioResponse],
-)
-async def get_my_portfolios(
-    _creds: HTTPAuthorizationCredentials = Depends(security),
-) -> List[PortfolioResponse]:
-    return [
-        PortfolioResponse(
-            id=1,
-            slug="abc123",
-            cv_id=None,
-            title="Full Stack Portfolio",
-            summary="Built with FastAPI",
-            description="All projects and experience",
-            theme="minimal",
-            published=True,
-            last_saved_at=datetime.now(timezone.utc),
+@router.post("/create", summary="Create a new portfolio", status_code=201)
+async def create_portfolio(
+    request: Request, payload: PortfolioCreateRequest
+) -> JSONResponse:
+    try:
+        uid = request.state.user.get("uid", "")
+        portfolio_id = await create_new_portfolio(uid, payload.theme)
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "message": "Portfolio created successfully",
+                "portfolio_id": portfolio_id,
+            },
         )
-    ]
+    except PortfolioInvalidThemeException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Error creating portfolio: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get(
-    "/edit/{portfolio_id}",
-    summary="Get portfolio content for editing",
-    description="Returns all structured content of a portfolio to populate the editor.",
-    response_model=PortfolioEditResponse,
+    "/list",
+    summary="List all portfolios for a user",
+    status_code=200,
+    response_model=list[PortfolioListOut],
 )
-async def get_portfolio_for_editing(
-    portfolio_id: int, _creds: HTTPAuthorizationCredentials = Depends(security)
-) -> PortfolioEditResponse:
-    return PortfolioEditResponse(
-        title="Editable Portfolio",
-        summary="Open to changes",
-        theme="minimal",
-        achievements=[],
-        projects=[],
-        experiences=[],
-        skills=["Python", "FastAPI"],
-        social_links=[],
-        last_saved_at=datetime.now(timezone.utc),
-    )
+async def list_portfolios(request: Request) -> list[PortfolioListOut]:
+    uid = request.state.user.get("uid", "")
+    return await list_of_portfolios(uid)
+
+
+@router.get(
+    "/{portfolio_id}",
+    summary="Get full portfolio details for editing",
+    response_model=PortfolioFullOut,
+    status_code=status.HTTP_200_OK,
+)
+async def get_portfolio_detail(request: Request, portfolio_id: int) -> PortfolioFullOut:
+    try:
+        uid = request.state.user.get("uid", "")
+        return await get_portfolio_details(uid, portfolio_id)
+    except PortfolioNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Failed to retrieve portfolio details: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.patch(
-    "/{portfolio_id}/save",
-    summary="Autosave portfolio content (partial update)",
-    description="Partially updates portfolio content during autosave or quick edits.",
-    response_model=PortfolioResponse,
+    "/update",
+    summary="Update portfolio content (with images)",
+    response_model=PortfolioOut,
+    status_code=status.HTTP_200_OK,
 )
-async def autosave_portfolio(
-    portfolio_id: int,
-    data: PortfolioUpdateRequest,
-    _creds: HTTPAuthorizationCredentials = Depends(security),
-) -> PortfolioResponse:
-    return PortfolioResponse(
-        id=portfolio_id,
-        slug="abc123",
-        cv_id=None,
-        title=data.title or "Updated Title",
-        summary=data.summary,
-        description=data.description or "Updated description",
-        theme=data.theme or "classic",
-        published=data.published if data.published is not None else False,
-        last_saved_at=datetime.now(timezone.utc),
-    )
-
-
-@router.delete(
-    "/{portfolio_id}",
-    summary="Delete a portfolio",
-    description="Unpublishes and removes portfolio from public access.",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-async def delete_portfolio(
-    portfolio_id: int, _creds: HTTPAuthorizationCredentials = Depends(security)
-) -> None:
-    return
+async def update_portfolio_endpoint(
+    request: Request,
+    portfolio_id: int = Form(...),
+    title: str = Form(None),
+    bio: str = Form(None),
+    experiences: str = Form(...),  # JSON string
+    projects: str = Form(...),  # JSON string
+    publications: str = Form(...),  # JSON string
+    technical_skills: str = Form(...),  # JSON string
+    project_thumbnails: list[UploadFile] = File([]),
+    company_logos: list[UploadFile] = File([]),
+) -> PortfolioOut:
+    """
+    Accepts multipart/form-data for portfolio update.
+    - experiences, projects, publications, technical_skills: JSON strings
+    - project_thumbnails: list of image files (order matches projects)
+    - company_logos: list of image files (order matches experiences)
+    """
+    try:
+        uid = request.state.user.get("uid", "")
+        return await update_portfolio(
+            uid=uid,
+            portfolio_id=portfolio_id,
+            title=title,
+            bio=bio,
+            experiences_json=experiences,
+            projects_json=projects,
+            publications_json=publications,
+            technical_skills_json=technical_skills,
+            project_thumbnails=project_thumbnails,
+            company_logos=company_logos,
+        )
+    except PortfolioNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Failed to update portfolio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update portfolio")

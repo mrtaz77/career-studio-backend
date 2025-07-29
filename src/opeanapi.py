@@ -17,6 +17,7 @@ all_tags_metadata = (
     + portfolio_tags_metadata
     + education_tags_metadata
     + certification_tags_metadata
+    + portfolio_tags_metadata
 )
 
 

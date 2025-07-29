@@ -127,8 +127,8 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
 
-        except ValueError:
-            logger.warning(INVALID_TOKEN)
+        except ValueError as e:
+            logger.warning(e)
             return Response(
                 content=ERROR_DETAIL_PREFIX + INVALID_TOKEN + ERROR_DETAIL_SUFFIX,
                 status_code=401,
