@@ -90,7 +90,7 @@ model Publication {
   journal         String
   year            Int
   cv_links        CV_Publication[]
-  portfolio_links Portfolio_Research[]
+  portfolio_links Portfolio_Publication[]
 }
 
 model CV_Publication {
@@ -205,7 +205,7 @@ model Portfolio {
   feedbacks        PortfolioFeedback[]
   experience       Portfolio_Experience[]
   projects         Portfolio_Project[]
-  research         Portfolio_Research[]
+  publications     Portfolio_Publication[]
   technical_skills Portfolio_TechnicalSkill[]
 }
 
@@ -249,11 +249,9 @@ model Portfolio_TechnicalSkill {
   @@id([portfolio_id, tech_skill_id])
 }
 
-model Portfolio_Research {
+model Portfolio_Publication {
   portfolio_id   Int
   publication_id Int
-  thumbnail_url  String?
-  description    String?
   portfolio      Portfolio   @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
   publication    Publication @relation(fields: [publication_id], references: [id])
 
