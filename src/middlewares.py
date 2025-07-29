@@ -91,17 +91,20 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """Process the request and set user UID in request state if authenticated."""
         try:
-            # Skip authentication for certain paths
-            if request.method == "OPTIONS" or request.url.path in [
-                "/api/v1/docs",
-                "/api/v1/redoc",
-                "/api/v1/openapi.json",
-                "/openapi.json",
-                "/favicon.ico",
-                "/",
-            ]:
+            if (
+                request.method == "OPTIONS"
+                or request.url.path
+                in [
+                    "/api/v1/docs",
+                    "/api/v1/redoc",
+                    "/api/v1/openapi.json",
+                    "/openapi.json",
+                    "/favicon.ico",
+                    "/",
+                ]
+                or request.url.path.startswith("/api/v1/portfolio/public/")
+            ):
                 return await call_next(request)
 
             auth_header = request.headers.get("Authorization")
@@ -148,4 +151,5 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
 async def validation_exception_handler(request: Request, exc: Exception) -> Response:
     if isinstance(exc, RequestValidationError):
         return await request_validation_exception_handler(request, exc)
+    return JSONResponse(status_code=400, content={"detail": "Invalid request."})
     return JSONResponse(status_code=400, content={"detail": "Invalid request."})
