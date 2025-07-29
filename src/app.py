@@ -15,6 +15,7 @@ from src.middlewares import (
     validation_exception_handler,
 )
 from src.opeanapi import inject_global_bearer_auth
+from src.portfolio.router import router as portfolio_router
 from src.users.router import router as user_router
 
 
@@ -60,6 +61,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(cv_router, prefix=API_PREFIX)
     app.include_router(education_router, prefix=API_PREFIX)
     app.include_router(certificate_router, prefix=API_PREFIX)
+    app.include_router(portfolio_router, prefix=API_PREFIX)
 
 
 def add_exception_handlers(app: FastAPI) -> None:
