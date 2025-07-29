@@ -2,6 +2,7 @@ from logging import getLogger
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer
 
 from src.cv.constants import CV_AUTOSAVE_SUCCESS, CV_SAVE_FAILED, DEFAULT_CV_TYPE
 from src.cv.exceptions import (
@@ -32,6 +33,8 @@ from src.cv.service import (
 )
 
 router = APIRouter(tags=["CV"], prefix="/cv")
+security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
+
 logger = getLogger(__name__)
 
 
