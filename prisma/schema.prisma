@@ -263,7 +263,10 @@ model AI_Request {
   id              Int      @id @default(autoincrement())
   user_id         String   
   request_count   Int      @default(0)
+  upload_count    Int      @default(0)
   last_request_at DateTime @default(now())
   init_request_at DateTime @default(now())
+  last_upload_at  DateTime @default(now())
+  init_upload_at  DateTime @default(now())
   user            User     @relation(fields: [user_id], references: [uid])
 }

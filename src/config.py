@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     SUPABASE_PROJECT_URL: str = Field(default="your_supabase_project_url")
     SUPABASE_SERVICE_ROLE_KEY: str = Field(default="your_supabase_service_role_key")
     GROQ_API_KEY: str = Field(default="your_groq_api_key")
+    GOOGLE_API_KEY: str = Field(default="your_google_api_key")
+    OPENROUTER_API_KEY: str = Field(default="your_openrouter_api_key")
 
 
 settings = Settings()
