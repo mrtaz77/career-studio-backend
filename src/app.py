@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
+from src.ai.router import router as ai_router
 from src.auth.router import router as auth_router
 from src.certificate.router import router as certificate_router
 from src.constants import API_PREFIX, VERSION, headers, methods, origins
@@ -62,6 +63,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(education_router, prefix=API_PREFIX)
     app.include_router(certificate_router, prefix=API_PREFIX)
     app.include_router(portfolio_router, prefix=API_PREFIX)
+    app.include_router(ai_router, prefix=API_PREFIX)
 
 
 def add_exception_handlers(app: FastAPI) -> None:

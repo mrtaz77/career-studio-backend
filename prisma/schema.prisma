@@ -25,6 +25,7 @@ model User {
   educations     Education[]
   portfolios     Portfolio[]
   feedbacks      PortfolioFeedback[] @relation("ReviewerFeedback")
+  ai_requests    AI_Request[]
 }
 
 model Education {
@@ -256,4 +257,13 @@ model Portfolio_Publication {
   publication    Publication @relation(fields: [publication_id], references: [id])
 
   @@id([portfolio_id, publication_id])
+}
+
+model AI_Request {
+  id              Int      @id @default(autoincrement())
+  user_id         String   
+  request_count   Int      @default(0)
+  last_request_at DateTime @default(now())
+  init_request_at DateTime @default(now())
+  user            User     @relation(fields: [user_id], references: [uid])
 }

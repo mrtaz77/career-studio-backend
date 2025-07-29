@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "AI_Request" ADD COLUMN     "init_request_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
