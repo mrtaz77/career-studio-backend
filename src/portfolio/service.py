@@ -26,6 +26,7 @@ from src.portfolio.schemas import (
     PortfolioOut,
     PortfolioProjectIn,
     PortfolioSaveRequest,
+    PublicPortfolioOut,
 )
 from src.util import to_datetime
 
@@ -605,3 +606,71 @@ async def update_portfolio(
             is_public=updated_portfolio.is_public,
             bio=updated_portfolio.bio or "",
         )
+
+
+async def publish_portfolio_service(uid: str, portfolio_id: int) -> str:
+    async with get_db() as db:
+        portfolio = await db.portfolio.find_unique(where={"id": portfolio_id})
+        if not portfolio or portfolio.user_id != uid:
+            raise PortfolioNotFoundException()
+        published_url = uuid4().hex + uuid4().hex[:8]
+        await db.portfolio.update(
+            where={"id": portfolio_id},
+            data={
+                "is_public": True,
+                "published_url": published_url,
+                "published_at": datetime.now(),
+            },
+        )
+        return published_url
+
+
+async def view_public_portfolio_service(published_url: str) -> PublicPortfolioOut:
+    async with get_db() as db:
+        portfolio = await db.portfolio.find_unique(
+            where={"published_url": published_url}
+        )
+        if not portfolio or not portfolio.is_public:
+            from src.portfolio.exceptions import PortfolioNotFoundException
+
+            raise PortfolioNotFoundException()
+        # Get full details
+        details = await get_portfolio_details(portfolio.user_id, portfolio.id)
+        # Remove id fields from response
+        details_dict = details.model_dump()
+        details_dict.pop("id", None)
+        # Remove id from experiences, projects, publications, technical_skills, feedbacks
+        for exp in details_dict.get("experiences", []):
+            exp.pop("id", None)
+        for proj in details_dict.get("projects", []):
+            proj.pop("id", None)
+            for tech in proj.get("technologies", []):
+                tech.pop("id", None)
+            for url in proj.get("urls", []):
+                url.pop("id", None)
+        for pub in details_dict.get("publications", []):
+            pub.pop("id", None)
+            for url in pub.get("urls", []):
+                url.pop("id", None)
+        for skill in details_dict.get("technical_skills", []):
+            skill.pop("id", None)
+        for fb in details_dict.get("feedbacks", []):
+            fb.pop("id", None)
+        # Return as PublicPortfolioOut (Pydantic will ignore extra fields)
+        return PublicPortfolioOut(**details_dict)
+
+
+async def unpublish_portfolio_service(uid: str, portfolio_id: int) -> dict[str, str]:
+    async with get_db() as db:
+        portfolio = await db.portfolio.find_unique(where={"id": portfolio_id})
+        if not portfolio or portfolio.user_id != uid:
+            raise PortfolioNotFoundException()
+        await db.portfolio.update(
+            where={"id": portfolio_id},
+            data={
+                "is_public": False,
+                "published_url": None,
+                "published_at": datetime.now(),  # Use current time or a valid datetime
+            },
+        )
+        return {"message": "Portfolio unpublished and public URL removed."}

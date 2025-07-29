@@ -12,12 +12,16 @@ from src.portfolio.schemas import (
     PortfolioFullOut,
     PortfolioListOut,
     PortfolioOut,
+    PublicPortfolioOut,
 )
 from src.portfolio.service import (
     create_new_portfolio,
     get_portfolio_details,
     list_of_portfolios,
+    publish_portfolio_service,
+    unpublish_portfolio_service,
     update_portfolio,
+    view_public_portfolio_service,
 )
 
 router = APIRouter(tags=["Portfolio"], prefix="/portfolio")
@@ -116,3 +120,64 @@ async def update_portfolio_endpoint(
     except Exception as e:
         logger.error(f"Failed to update portfolio: {e}")
         raise HTTPException(status_code=500, detail="Failed to update portfolio")
+
+
+@router.put(
+    "/publish/{portfolio_id}",
+    summary="Publish a portfolio and generate a public URL",
+    status_code=status.HTTP_200_OK,
+)
+async def publish_portfolio(request: Request, portfolio_id: int) -> JSONResponse:
+    try:
+        uid = request.state.user.get("uid", "")
+        url = await publish_portfolio_service(uid, portfolio_id)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "published_url": url,
+                "message": "Portfolio published successfully.",
+            },
+        )
+    except PortfolioNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Failed to publish portfolio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to publish portfolio")
+
+
+@router.put(
+    "/unpublish/{portfolio_id}",
+    summary="Unpublish a portfolio and remove its public URL",
+    status_code=status.HTTP_200_OK,
+)
+async def unpublish_portfolio(request: Request, portfolio_id: int) -> JSONResponse:
+    try:
+        uid = request.state.user.get("uid", "")
+        result = await unpublish_portfolio_service(uid, portfolio_id)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=result,
+        )
+    except PortfolioNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Failed to unpublish portfolio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to unpublish portfolio")
+
+
+@router.get(
+    "/public/{published_url}",
+    summary="View a public portfolio by published_url",
+    response_model=PublicPortfolioOut,
+    status_code=status.HTTP_200_OK,
+)
+async def view_public_portfolio(published_url: str) -> PublicPortfolioOut:
+    try:
+        return await view_public_portfolio_service(published_url)
+    except PortfolioNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Failed to retrieve public portfolio: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve public portfolio"
+        )

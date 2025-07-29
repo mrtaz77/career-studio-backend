@@ -1,2 +1,5 @@
 PORTFOLIO_INVALID_THEME = "Invalid portfolio theme."
 PORTFOLIO_NOT_FOUND = "Portfolio not found."
+PORTFOLIO_PUBLISH_ERROR = "Failed to publish portfolio."
+PORTFOLIO_PUBLIC_NOT_FOUND = "Portfolio not found or not public."
+PORTFOLIO_UNPUBLISH_SUCCESS = "Portfolio unpublished and public URL removed."
