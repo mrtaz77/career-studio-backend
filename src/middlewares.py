@@ -9,11 +9,7 @@ from fastapi.security import HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from src.auth.constants import (
-    AUTH_HEADER_MISSING,
-    INVALID_TOKEN,
-    TOKEN_VERIFICATION_ERROR,
-)
+from src.auth.constants import AUTH_HEADER_MISSING, TOKEN_VERIFICATION_ERROR
 from src.firebase import auth, verify_token
 
 logger = getLogger(__name__)
@@ -127,10 +123,10 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
 
-        except ValueError:
-            logger.warning(INVALID_TOKEN)
+        except ValueError as e:
+            logger.warning(e)
             return Response(
-                content=ERROR_DETAIL_PREFIX + INVALID_TOKEN + ERROR_DETAIL_SUFFIX,
+                content=ERROR_DETAIL_PREFIX + str(e) + ERROR_DETAIL_SUFFIX,
                 status_code=401,
                 media_type=JSON_MEDIA_TYPE,
             )

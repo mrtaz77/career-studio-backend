@@ -98,12 +98,8 @@ async def create_cv(request: Request, payload: CVCreateRequest) -> JSONResponse:
     status_code=status.HTTP_200_OK,
 )
 async def get_list_of_cvs(request: Request) -> list[CVListOut]:
-    try:
-        uid = request.state.user.get("uid", "")
-        return await list_of_cvs(uid)
-    except Exception:
-        logger.exception("Failed to get list of CV IDs")
-        raise HTTPException(status_code=500, detail="Failed to get list of CV IDs")
+    uid = request.state.user.get("uid", "")
+    return await list_of_cvs(uid)
 
 
 @router.get("/search", summary="Search for a cv", status_code=status.HTTP_200_OK)

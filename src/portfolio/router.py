@@ -2,15 +2,12 @@ from logging import getLogger
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer
 
 from src.portfolio.exceptions import PortfolioInvalidThemeException
-from src.portfolio.schemas import PortfolioCreateRequest
-from src.portfolio.service import create_new_portfolio
+from src.portfolio.schemas import PortfolioCreateRequest, PortfolioOut
+from src.portfolio.service import create_new_portfolio, list_of_portfolios
 
 router = APIRouter(tags=["Portfolio"], prefix="/portfolio")
-security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
-
 logger = getLogger(__name__)
 
 
@@ -33,3 +30,14 @@ async def create_portfolio(
     except Exception as e:
         logger.error(f"Error creating portfolio: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@router.get(
+    "/list",
+    summary="List all portfolios for a user",
+    status_code=200,
+    response_model=list[PortfolioOut],
+)
+async def list_portfolios(request: Request) -> list[PortfolioOut]:
+    uid = request.state.user.get("uid", "")
+    return await list_of_portfolios(uid)
