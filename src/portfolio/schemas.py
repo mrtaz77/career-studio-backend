@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from src.cv.schemas import ExperienceIn, ProjectIn, PublicationIn, TechnicalSkillIn
+from src.users.schemas import UserProfile
 
 
 class PortfolioCreateRequest(BaseModel):
@@ -126,6 +127,23 @@ class PublicFeedbackOut(BaseModel):
     created_at: datetime
 
 
+class PublicEducationOut(BaseModel):
+    degree: str
+    institution: str
+    location: str
+    start_date: datetime
+    end_date: datetime
+    gpa: Optional[float] = None
+    honors: Optional[str] = None
+
+
+class PublicCertificateOut(BaseModel):
+    title: str
+    issuer: str
+    issued_date: str
+    link: str
+
+
 class PublicPortfolioOut(BaseModel):
     theme: str
     title: str
@@ -140,3 +158,6 @@ class PublicPortfolioOut(BaseModel):
     technical_skills: List[PublicTechnicalSkillOut]
     projects: List[PublicProjectOut]
     feedbacks: List[PublicFeedbackOut]
+    user_profile: Optional[UserProfile] = None
+    education: Optional[List[PublicEducationOut]] = None
+    certificates: Optional[List[PublicCertificateOut]] = None

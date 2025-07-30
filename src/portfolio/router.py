@@ -14,6 +14,7 @@ from src.portfolio.schemas import (
     PortfolioOut,
     PublicPortfolioOut,
 )
+from src.portfolio.service import get_full_public_portfolio  # <-- add this import
 from src.portfolio.service import (
     create_new_portfolio,
     get_portfolio_details,
@@ -21,7 +22,6 @@ from src.portfolio.service import (
     publish_portfolio_service,
     unpublish_portfolio_service,
     update_portfolio,
-    view_public_portfolio_service,
 )
 
 router = APIRouter(tags=["Portfolio"], prefix="/portfolio")
@@ -173,8 +173,15 @@ async def unpublish_portfolio(request: Request, portfolio_id: int) -> JSONRespon
 )
 async def view_public_portfolio(published_url: str) -> PublicPortfolioOut:
     try:
-        return await view_public_portfolio_service(published_url)
+        result: PublicPortfolioOut = await get_full_public_portfolio(published_url)
+        return result
     except PortfolioNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except Exception as e:
+        logger.error(f"Failed to retrieve public portfolio: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve public portfolio"
+        )
         raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception as e:
         logger.error(f"Failed to retrieve public portfolio: {e}")
