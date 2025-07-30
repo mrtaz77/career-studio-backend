@@ -1,12 +1,12 @@
 import json
-from datetime import date, datetime
+from datetime import datetime
 from logging import getLogger
 from typing import Any, Optional
 from uuid import uuid4
 
 from fastapi import UploadFile
 
-from src.certificate.service import generate_signed_url
+from src.certificate.service import generate_signed_url, get_user_certificates
 from src.cv.schemas import (
     ExperienceIn,
     ProjectTechnologyIn,
@@ -15,6 +15,7 @@ from src.cv.schemas import (
     TechnicalSkillIn,
 )
 from src.database import get_db, get_supabase
+from src.education.service import get_user_education
 from src.portfolio.exceptions import (
     PortfolioInvalidThemeException,
     PortfolioNotFoundException,
@@ -28,6 +29,7 @@ from src.portfolio.schemas import (
     PortfolioSaveRequest,
     PublicPortfolioOut,
 )
+from src.users.service import get_user_profile_by_uid
 from src.util import to_datetime
 
 logger = getLogger(__name__)
@@ -95,6 +97,9 @@ async def get_portfolio_details(uid: str, portfolio_id: int) -> PortfolioFullOut
         experiences = []
         for link in exp_links:
             exp_dict = link.experience.__dict__.copy()
+            # Handle date fields consistently
+            exp_dict["start_date"] = to_datetime(exp_dict["start_date"])
+            exp_dict["end_date"] = to_datetime(exp_dict["end_date"])
             logo_url = exp_dict.get("company_logo")
             if logo_url:
                 exp_dict["company_logo"] = generate_signed_url(
@@ -219,19 +224,9 @@ async def update_portfolio_content(
             exp_id = exp.id
             if not exp_id:
                 new_exp_data = exp.model_dump(exclude={"id"})
-                # Fix: convert start_date and end_date to datetime
-                if "start_date" in new_exp_data and isinstance(
-                    new_exp_data["start_date"], str
-                ):
-                    new_exp_data["start_date"] = to_datetime(
-                        date.fromisoformat(new_exp_data["start_date"])
-                    )
-                if "end_date" in new_exp_data and isinstance(
-                    new_exp_data["end_date"], str
-                ):
-                    new_exp_data["end_date"] = to_datetime(
-                        date.fromisoformat(new_exp_data["end_date"])
-                    )
+                # Always convert start_date and end_date to datetime
+                new_exp_data["start_date"] = to_datetime(new_exp_data["start_date"])
+                new_exp_data["end_date"] = to_datetime(new_exp_data["end_date"])
                 new_exp = await db.experience.create(data=new_exp_data)
                 exp_id = new_exp.id
             await db.portfolio_experience.create(
@@ -461,19 +456,9 @@ async def update_portfolio(
                     or not new_exp_data["company_logo"]
                 ):
                     new_exp_data.pop("company_logo", None)
-                # Convert start_date and end_date to datetime using util.py
-                if "start_date" in new_exp_data and isinstance(
-                    new_exp_data["start_date"], str
-                ):
-                    new_exp_data["start_date"] = to_datetime(
-                        date.fromisoformat(new_exp_data["start_date"])
-                    )
-                if "end_date" in new_exp_data and isinstance(
-                    new_exp_data["end_date"], str
-                ):
-                    new_exp_data["end_date"] = to_datetime(
-                        date.fromisoformat(new_exp_data["end_date"])
-                    )
+                # Always convert start_date and end_date to datetime
+                new_exp_data["start_date"] = to_datetime(new_exp_data["start_date"])
+                new_exp_data["end_date"] = to_datetime(new_exp_data["end_date"])
                 new_exp = await db.experience.create(data=new_exp_data)
                 exp_id = new_exp.id
             else:
@@ -660,6 +645,43 @@ async def view_public_portfolio_service(published_url: str) -> PublicPortfolioOu
         return PublicPortfolioOut(**details_dict)
 
 
+async def get_full_public_portfolio(published_url: str) -> PublicPortfolioOut:
+    """
+    Returns a PublicPortfolioOut with all public info, including user, education, certificates.
+    Handles all input/output processing for the /public/{published_url} endpoint.
+    Removes id fields from education and certificates.
+    """
+    details: PublicPortfolioOut = await view_public_portfolio_service(published_url)
+    owner_uid: str = await get_portfolio_owner_uid_by_published_url(published_url)
+    user_profile = await get_user_profile_by_uid(owner_uid)
+    education = await get_user_education(owner_uid)
+    certificates = await get_user_certificates(owner_uid)
+
+    # Remove id fields from education and certificates
+    education_no_id = [
+        (
+            {k: v for k, v in e.model_dump().items() if k != "id"}
+            if hasattr(e, "model_dump")
+            else {k: v for k, v in e.__dict__.items() if k != "id"}
+        )
+        for e in education
+    ]
+    certificates_no_id = [
+        (
+            {k: v for k, v in c.model_dump().items() if k != "id"}
+            if hasattr(c, "model_dump")
+            else {k: v for k, v in c.__dict__.items() if k != "id"}
+        )
+        for c in certificates
+    ]
+
+    details_dict = details.model_dump()
+    details_dict["user_profile"] = user_profile
+    details_dict["education"] = education_no_id
+    details_dict["certificates"] = certificates_no_id
+    return PublicPortfolioOut(**details_dict)
+
+
 async def unpublish_portfolio_service(uid: str, portfolio_id: int) -> dict[str, str]:
     async with get_db() as db:
         portfolio = await db.portfolio.find_unique(where={"id": portfolio_id})
@@ -674,3 +696,17 @@ async def unpublish_portfolio_service(uid: str, portfolio_id: int) -> dict[str, 
             },
         )
         return {"message": "Portfolio unpublished and public URL removed."}
+
+
+async def get_portfolio_owner_uid_by_published_url(published_url: str) -> str:
+    """
+    Returns the user_id (owner UID) for a given published_url.
+    Raises PortfolioNotFoundException if not found or not public.
+    """
+    async with get_db() as db:
+        portfolio = await db.portfolio.find_unique(
+            where={"published_url": published_url}
+        )
+        if not portfolio or not portfolio.is_public:
+            raise PortfolioNotFoundException()
+    return str(portfolio.user_id)  # Ensure return type is str
