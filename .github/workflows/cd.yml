@@ -71,6 +71,7 @@ jobs:
             REDIS_HOST=${{ secrets.REDIS_HOST }}
             REDIS_PORT=${{ secrets.REDIS_PORT }}
             GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+            GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
             EOF
             chmod 600 .env
 
