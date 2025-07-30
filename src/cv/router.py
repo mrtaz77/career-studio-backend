@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status, Body
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 
@@ -31,6 +31,8 @@ from src.cv.service import (
     save_cv_version,
     search_cvs,
 )
+
+from src.database import get_db
 
 router = APIRouter(tags=["CV"], prefix="/cv")
 security = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
@@ -171,6 +173,27 @@ async def render_cv_endpoint(
         raise HTTPException(
             status_code=500, detail="Failed to render CV in HTML format"
         )
+
+
+@router.put("/{cv_id}/template", summary="Update CV template")
+async def update_cv_template(request: Request, cv_id: int, payload: dict = Body(...)) -> dict:
+    try:
+        uid = request.state.user.get("uid", "")
+        template = payload.get("template")
+        if not template:
+            raise HTTPException(status_code=400, detail="Template is required")
+        # Debug logging
+        print(f"Trying to update template for cv_id={cv_id}, user_id={uid}")
+        async with get_db() as db:
+            cv = await db.cv.find_unique(where={"id": cv_id, "user_id": uid})
+            print(f"CV found: {cv}")
+            if not cv:
+                raise HTTPException(status_code=404, detail="CV not found")
+            await db.cv.update(where={"id": cv_id}, data={"template": template})
+        return {"message": "Template updated"}
+    except Exception:
+        logger.exception("Failed to update CV template")
+        raise HTTPException(status_code=500, detail="Failed to update CV template")
 
 
 @router.delete(
