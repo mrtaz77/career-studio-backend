@@ -184,7 +184,6 @@ async def analyze_resume_file(user_id: str, file: UploadFile) -> JSONResponse:
             weaknesses=result.get("weaknesses"),
             recommended_courses=result.get("recommendations"),
             resume_score=result.get("resume_score"),
-            analysis=result.get("analysis"),
             ats_score=result.get("ats_score"),
             keyword_match_score=result.get("keyword_match_score"),
             formatting_score=result.get("formatting_score"),

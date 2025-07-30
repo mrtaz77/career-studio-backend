@@ -73,7 +73,7 @@ UNSUPPORTED_FILE_TYPE_ERROR = "Unsupported file type. Please upload PDF or DOCX.
 ANALYSIS_FAILED_ERROR = "Failed to analyze resume."
 FILE_TOO_LARGE_ERROR = "Uploaded file is too large. Maximum allowed size is 8MB."
 
-UPLOAD_USAGE_LIMIT = 10
+UPLOAD_USAGE_LIMIT = 20
 UPLOAD_USAGE_LIMIT_EXCEEDED_MESSAGE = (
     "You have reached your monthly resume upload quota (10 per month)."
 )
