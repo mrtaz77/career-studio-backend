@@ -52,3 +52,28 @@ REQUEST_LENGTH_LIMIT = 1000
 REQUEST_LENGTH_LIMIT_EXCEEDED_MESSAGE = (
     "Request length exceeded the limit of 1000 characters."
 )
+
+
+GEMINI_RESUME_PROMPT = """
+You are an expert resume analyst. Analyze the following resume and provide a detailed JSON object with these keys:
+- overall_assessment: string
+- skills: list of strings
+- missing_skills: list of strings
+- experience_summary: string
+- education_summary: string
+- strengths: list of strings
+- weaknesses: list of strings
+- recommendations: list of strings
+- resume_score: integer (0-100)
+Resume:
+{resume_text}
+"""
+
+UNSUPPORTED_FILE_TYPE_ERROR = "Unsupported file type. Please upload PDF or DOCX."
+ANALYSIS_FAILED_ERROR = "Failed to analyze resume."
+FILE_TOO_LARGE_ERROR = "Uploaded file is too large. Maximum allowed size is 8MB."
+
+UPLOAD_USAGE_LIMIT = 20
+UPLOAD_USAGE_LIMIT_EXCEEDED_MESSAGE = (
+    "You have reached your monthly resume upload quota (10 per month)."
+)
